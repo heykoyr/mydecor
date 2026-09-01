@@ -1,14 +1,6 @@
-import type {
-  Availability,
-  Dimensions,
-  PlacementMode,
-  Product,
-  ProductCategory,
-  Retailer,
-  RoomType,
-  StyleTag,
-} from '@/types/domain';
+import type { PlacementMode, Product, ProductCategory, Retailer, RoomType } from '@/types/domain';
 import { renderArtwork } from './artwork';
+import { generateDrafts, type ProductDraft } from './generate';
 
 /**
  * The reference catalogue.
@@ -96,34 +88,8 @@ const CATEGORY_DEFAULTS: Record<
   floor_cushions: { aspectRatio: 1.25, coverage: 0.3, placements: ['standing', 'resting'] },
 };
 
-interface Draft {
-  id: string;
-  name: string;
-  category: ProductCategory;
-  subcategory?: string;
-  retailerId: string;
-  price: number;
-  color: string;
-  colorHex: string;
-  /** Frame, pot, base or trim colour, where the artwork has one. */
-  accentHex?: string;
-  material: string;
-  styles: StyleTag[];
-  dimensions?: Dimensions;
-  rooms: RoomType[];
-  tags: string[];
-  availability?: Availability;
-  rating?: { average: number; count: number };
-  /** Overrides the category default when this item is unusually sized. */
-  coverage?: number;
-  /**
-   * Free-form attributes shown on product detail. For plants this carries the
-   * care requirements, and `light` is read by the recommendation engine.
-   */
-  metadata?: Record<string, string>;
-}
 
-function build(draft: Draft): Product {
+function build(draft: ProductDraft): Product {
   const defaults = CATEGORY_DEFAULTS[draft.category];
   const alt = `${draft.name}, ${draft.color} ${draft.material}`;
 
@@ -174,7 +140,7 @@ const ANYWHERE = [
   'nursery',
 ] as RoomType[];
 
-const DRAFTS: Draft[] = [
+const CURATED: ProductDraft[] = [
   /* Window treatments */
   {
     id: 'p_curtain_linen_oat',
@@ -840,6 +806,13 @@ const DRAFTS: Draft[] = [
     rating: { average: 4.3, count: 141 },
   },
 ];
+
+/**
+ * The curated items come first: they are the hand-written ones with the most
+ * considered copy, and ties in ranking resolve towards whatever was authored
+ * deliberately.
+ */
+const DRAFTS: ProductDraft[] = [...CURATED, ...generateDrafts(CURATED)];
 
 export const PRODUCTS: Product[] = DRAFTS.map(build);
 

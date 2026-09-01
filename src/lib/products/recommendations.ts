@@ -1,6 +1,7 @@
 import type {
   Opportunity,
   Product,
+  ProductCategory,
   Recommendation,
   RecommendationFactors,
   RoomAnalysis,
@@ -226,5 +227,48 @@ export async function recommendForOpportunity(
     .filter((recommendation) => recommendation.score >= MIN_SCORE)
     .sort((a, b) => b.score - a.score);
 
-  return ranked.slice(0, limit);
+  return diversify(ranked, context.opportunity.recommendedCategories, limit);
+}
+
+/**
+ * Spreads the shortlist across the opportunity's categories.
+ *
+ * Pure score order collapses variety as the catalogue deepens: with twenty
+ * candidates per category, the strongest category takes every slot and "fill
+ * this wall" returns eight near-identical prints, with no mirror and no shelf.
+ * That is a worse answer than a slightly lower-scoring one, because the user is
+ * choosing between *kinds* of solution before they choose between products.
+ *
+ * So the list is dealt round-robin over the categories, in the order the
+ * opportunity declared them, taking the best remaining from each. Within a
+ * category, score order is untouched.
+ */
+function diversify(
+  ranked: Recommendation[],
+  categories: readonly ProductCategory[],
+  limit: number,
+): Recommendation[] {
+  const queues = new Map<ProductCategory, Recommendation[]>();
+  for (const category of categories) queues.set(category, []);
+  for (const recommendation of ranked) {
+    queues.get(recommendation.product.category)?.push(recommendation);
+  }
+
+  const picked: Recommendation[] = [];
+  let exhausted = false;
+
+  while (picked.length < limit && !exhausted) {
+    exhausted = true;
+    for (const category of categories) {
+      if (picked.length >= limit) break;
+      const next = queues.get(category)?.shift();
+      if (!next) continue;
+      picked.push(next);
+      exhausted = false;
+    }
+  }
+
+  // The leading item should still be the best overall, not merely the best of
+  // whichever category happened to be declared first.
+  return picked.sort((a, b) => b.score - a.score);
 }
