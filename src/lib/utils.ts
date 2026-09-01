@@ -44,7 +44,9 @@ export function lerp(a: number, b: number, t: number): number {
 }
 
 export function formatPrice(amount: number, currency: string): string {
-  return new Intl.NumberFormat('en-GB', {
+  // Undefined locale means the viewer's own, so a Nigerian shopper sees the
+  // naira symbol rather than a currency code. Retailers set the currency.
+  return new Intl.NumberFormat(undefined, {
     style: 'currency',
     currency,
     // Whole prices read cleaner in a browsing context; keep pence when present.

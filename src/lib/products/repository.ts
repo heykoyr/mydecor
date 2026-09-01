@@ -76,7 +76,77 @@ class StaticProductRepository implements ProductRepository {
   }
 }
 
-export const productRepository: ProductRepository = new StaticProductRepository();
+const staticRepository = new StaticProductRepository();
+
+/**
+ * The repository the app actually uses.
+ *
+ * Delegates to a live retailer catalogue when one is connected, and to the
+ * bundled reference catalogue when none is. The switch happens once, on the
+ * first capability probe; until it resolves the reference catalogue answers, so
+ * a screen never waits on a network round trip to render something.
+ *
+ * `isReference` is read by the UI to decide whether to present items as
+ * purchasable, so it must track whichever repository is actually answering.
+ */
+class ResolvingProductRepository implements ProductRepository {
+  private active: ProductRepository = staticRepository;
+  private resolving: Promise<ProductRepository> | null = null;
+
+  get isReference(): boolean {
+    return this.active.isReference;
+  }
+
+  private async resolve(): Promise<ProductRepository> {
+    if (typeof window === 'undefined') return staticRepository;
+    this.resolving ??= (async () => {
+      const { catalogCapabilities, LiveProductRepository } = await import('./live-repository');
+      const { configured } = await catalogCapabilities();
+      this.active = configured ? new LiveProductRepository() : staticRepository;
+      return this.active;
+    })();
+    return this.resolving;
+  }
+
+  async find(query: ProductQuery): Promise<Product[]> {
+    const repository = await this.resolve();
+    try {
+      const results = await repository.find(query);
+      // A connected retailer that returns nothing for this spot is a worse
+      // answer than the reference catalogue's, so fall back rather than show
+      // an empty shelf.
+      if (results.length > 0 || repository === staticRepository) return results;
+    } catch {
+      // Retailer unavailable; the reference catalogue keeps the app usable.
+    }
+    return staticRepository.find(query);
+  }
+
+  async byId(id: string): Promise<Product | null> {
+    const repository = await this.resolve();
+    return (await repository.byId(id)) ?? staticRepository.byId(id);
+  }
+
+  async byIds(ids: string[]): Promise<Product[]> {
+    const repository = await this.resolve();
+    const found = await repository.byIds(ids);
+    if (found.length === ids.length) return found;
+    const missing = ids.filter((id) => !found.some((product) => product.id === id));
+    return [...found, ...(await staticRepository.byIds(missing))];
+  }
+
+  async all(): Promise<Product[]> {
+    const repository = await this.resolve();
+    const products = await repository.all();
+    return products.length > 0 ? products : staticRepository.all();
+  }
+
+  artworkFor(product: Product, aspectRatio: number): string {
+    return this.active.artworkFor(product, aspectRatio);
+  }
+}
+
+export const productRepository: ProductRepository = new ResolvingProductRepository();
 
 /**
  * Builds the outbound link for a product, attaching affiliate attribution when

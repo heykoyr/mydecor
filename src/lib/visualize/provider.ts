@@ -8,6 +8,7 @@ import {
   drawContactShadow,
   drawImageInQuad,
   gradeToRoom,
+  keyOutBackground,
   sampleRegionLight,
 } from './draw';
 
@@ -145,14 +146,17 @@ export class CanvasCompositeProvider implements VisualizationProvider {
       drawContactShadow(ctx, target, light.brightness);
     }
 
-    const graded = gradeToRoom(artwork, light);
-    drawImageInQuad(
-      ctx,
-      graded,
-      target,
-      artwork.naturalWidth || artwork.width,
-      artwork.naturalHeight || artwork.height,
-    );
+    // Retailer photography arrives on a backdrop; generated artwork does not.
+    const cutOut = product.image.hasTransparency
+      ? artwork
+      : keyOutBackground(artwork, artwork.naturalWidth, artwork.naturalHeight);
+
+    const size = {
+      width: artwork.naturalWidth || artwork.width,
+      height: artwork.naturalHeight || artwork.height,
+    };
+    const graded = gradeToRoom(cutOut, light, size);
+    drawImageInQuad(ctx, graded, target, size.width, size.height);
 
     signal?.throwIfAborted();
 

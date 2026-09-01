@@ -3,8 +3,10 @@
 import type { Product } from '@/types/domain';
 import { formatDimensions, formatPrice, humanise } from '@/lib/utils';
 import { getRetailer } from '@/lib/products/catalog';
-import { productRepository } from '@/lib/products/repository';
+import { buildOutboundUrl, productRepository } from '@/lib/products/repository';
+import { track } from '@/lib/analytics/analytics';
 import { Badge } from '@/components/ui/surfaces';
+import { ExternalIcon } from '@/components/ui/icons';
 
 /**
  * Product detail, rendered inside the room sheet.
@@ -25,6 +27,11 @@ export function ProductDetail({
 }) {
   const retailer = getRetailer(product.retailerId);
   const dimensions = product.dimensions ? formatDimensions(product.dimensions) : null;
+  // Only a connected retailer gets a buy link. With the reference catalogue
+  // there is nothing to link to, and a button that goes nowhere is worse than
+  // no button.
+  const purchasable = !productRepository.isReference;
+  const retailerName = retailer?.name ?? 'the retailer';
 
   const attributes = [
     ['Material', product.material],
@@ -78,13 +85,33 @@ export function ProductDetail({
         ))}
       </dl>
 
-      {productRepository.isReference && (
+      {purchasable && (
+        <a
+          href={buildOutboundUrl(product.url, undefined, undefined)}
+          target="_blank"
+          rel="noopener noreferrer nofollow sponsored"
+          onClick={() =>
+            track('shop_clicked', {
+              productId: product.id,
+              retailerId: product.retailerId,
+              price: product.price,
+            })
+          }
+          className="mt-6 flex h-13 w-full items-center justify-center gap-2 rounded-lg border border-line bg-surface text-body font-medium text-ink transition-colors hover:bg-sunken"
+        >
+          Buy at {retailerName}
+          <ExternalIcon size={17} />
+        </a>
+      )}
+
+      {!purchasable && (
         <div className="mt-5 rounded-md bg-sunken px-4 py-3">
           <Badge tone="caution">Sample catalogue</Badge>
           <p className="mt-2 text-body-sm text-muted">
-            This item comes from the bundled reference catalogue, so it is not purchasable and the
-            retailer is not a real one. Everything else on this screen — the recommendation, the
-            in-room preview — works exactly as it will with a live catalogue connected.
+            No retailer is connected to this deployment, so this item comes from the bundled
+            reference catalogue: it is not purchasable and the seller is not a real one. Everything
+            else here — the recommendation, the in-room preview — behaves exactly as it will once a
+            real catalogue is connected.
           </p>
         </div>
       )}

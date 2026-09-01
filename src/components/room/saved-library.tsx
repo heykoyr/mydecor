@@ -46,11 +46,12 @@ export function SavedLibrary() {
         const byId = new Map(products.map((product) => [product.id, product]));
         const entries = saved
           .map((item) => {
-            const product = byId.get(item.productId);
+            // The catalogue is authoritative when it still has the item; the
+            // snapshot taken at save time covers withdrawn listings and live
+            // sources that cannot be queried by id.
+            const product = byId.get(item.productId) ?? item.product;
             return product ? { saved: item, product } : null;
           })
-          // A saved product can outlive its catalogue entry; drop it rather
-          // than rendering a hole where a product used to be.
           .filter((entry): entry is SavedEntry => entry !== null);
 
         setState({ status: 'ready', rooms, products: entries });

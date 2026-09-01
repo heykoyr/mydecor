@@ -364,6 +364,15 @@ export interface SavedProduct {
   /** Where it was saved from, for "seen in your bedroom" context. */
   fromRoomId?: string;
   fromOpportunityId?: string;
+  /**
+   * The product as it was when saved.
+   *
+   * A live retailer catalogue has no by-id endpoint and its listings are
+   * withdrawn, so re-resolving a saved id after a reload is not reliable. The
+   * snapshot is also the honest record of what the user actually saved — the
+   * price they saw, not today's.
+   */
+  product?: Product;
 }
 
 export interface UserPreferences {

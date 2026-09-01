@@ -66,6 +66,7 @@ export function DiscoverFeed() {
       void savedProductRepository.add({
         productId: product.id,
         savedAt: new Date().toISOString(),
+        product,
       });
       track('product_saved', { productId: product.id, category: product.category });
       toast('Saved');

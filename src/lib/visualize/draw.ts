@@ -130,6 +130,95 @@ export function drawContactShadow(
   ctx.restore();
 }
 
+/**
+ * Removes a product photograph's backdrop, returning artwork with alpha.
+ *
+ * Generated artwork already has transparency; retailer photography does not —
+ * it arrives on a white or near-white sweep. Compositing that straight into a
+ * room pastes a visible rectangle.
+ *
+ * The fill is flood-filled inward from the frame edges rather than keyed by
+ * colour across the whole image. Colour keying would also erase every white
+ * part of the product itself, which for interiors — a white lampshade, a chalk
+ * vase, pale linen — is most of the catalogue. Only background connected to an
+ * edge is removed.
+ */
+export function keyOutBackground(source: CanvasImageSource, width: number, height: number) {
+  if (width < 4 || height < 4) return source;
+
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return source;
+
+  ctx.drawImage(source, 0, 0, width, height);
+  const image = ctx.getImageData(0, 0, width, height);
+  const { data } = image;
+
+  /** Channel distance within which a pixel counts as the same backdrop. */
+  const tolerance = 34;
+
+  const sample = (index: number) => [data[index]!, data[index + 1]!, data[index + 2]!] as const;
+  // The backdrop is whatever the corners agree on.
+  const corners = [0, (width - 1) * 4, (height - 1) * width * 4, (height * width - 1) * 4];
+  const base = corners.map(sample);
+  const backdrop = [0, 1, 2].map(
+    (channel) => base.reduce((total, rgb) => total + rgb[channel]!, 0) / base.length,
+  );
+
+  // A dark or busy corner means this is a lifestyle shot, not a cut-out; taking
+  // a bite out of it would look far worse than leaving it alone.
+  const brightEnough = backdrop.every((channel) => channel > 180);
+  const consistent = base.every((rgb) =>
+    rgb.every((channel, i) => Math.abs(channel - backdrop[i]!) < tolerance),
+  );
+  if (!brightEnough || !consistent) return source;
+
+  const matches = (index: number) => {
+    const rgb = sample(index);
+    return rgb.every((channel, i) => Math.abs(channel - backdrop[i]!) <= tolerance);
+  };
+
+  const visited = new Uint8Array(width * height);
+  const stack: number[] = [];
+  for (let x = 0; x < width; x += 1) {
+    stack.push(x, (height - 1) * width + x);
+  }
+  for (let y = 0; y < height; y += 1) {
+    stack.push(y * width, y * width + width - 1);
+  }
+
+  while (stack.length > 0) {
+    const pixel = stack.pop()!;
+    if (visited[pixel]) continue;
+    if (!matches(pixel * 4)) continue;
+    visited[pixel] = 1;
+    data[pixel * 4 + 3] = 0;
+
+    const x = pixel % width;
+    const y = (pixel - x) / width;
+    if (x > 0) stack.push(pixel - 1);
+    if (x < width - 1) stack.push(pixel + 1);
+    if (y > 0) stack.push(pixel - width);
+    if (y < height - 1) stack.push(pixel + width);
+  }
+
+  // Feather the cut so the product does not have a hard, aliased outline.
+  for (let y = 1; y < height - 1; y += 1) {
+    for (let x = 1; x < width - 1; x += 1) {
+      const pixel = y * width + x;
+      if (visited[pixel]) continue;
+      const exposed =
+        visited[pixel - 1]! + visited[pixel + 1]! + visited[pixel - width]! + visited[pixel + width]!;
+      if (exposed > 0) data[pixel * 4 + 3] = Math.round(255 * (1 - exposed / 6));
+    }
+  }
+
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
 export interface RegionLight {
   /** Mean colour of the room beneath the placement, 0–255 per channel. */
   r: number;
@@ -187,11 +276,11 @@ export function sampleRegionLight(
  * positioned.
  */
 export function gradeToRoom(
-  source: HTMLImageElement,
+  source: CanvasImageSource,
   light: RegionLight,
-): HTMLCanvasElement | HTMLImageElement {
-  const width = source.naturalWidth || source.width;
-  const height = source.naturalHeight || source.height;
+  size: { width: number; height: number },
+): CanvasImageSource {
+  const { width, height } = size;
   if (width === 0 || height === 0) return source;
 
   const canvas = document.createElement('canvas');

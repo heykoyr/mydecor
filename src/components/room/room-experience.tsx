@@ -226,6 +226,7 @@ export function RoomExperience({
           savedAt: new Date().toISOString(),
           fromRoomId: roomId,
           fromOpportunityId: opportunity.id,
+          product,
         });
         track('product_saved', { productId: product.id, category: product.category });
         toast('Saved', { action: { label: 'View', onPress: () => router.push('/saved') } });
