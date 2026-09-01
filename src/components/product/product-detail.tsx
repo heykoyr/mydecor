@@ -1,9 +1,10 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import type { Product } from '@/types/domain';
 import { formatDimensions, formatPrice, humanise } from '@/lib/utils';
-import { getRetailer } from '@/lib/products/catalog';
-import { buildOutboundUrl, productRepository } from '@/lib/products/repository';
+import { productRepository } from '@/lib/products/repository';
+import { hydrateRetailers, lookupRetailer, outboundUrl } from '@/lib/products/retailers';
 import { track } from '@/lib/analytics/analytics';
 import { Badge } from '@/components/ui/surfaces';
 import { ExternalIcon } from '@/components/ui/icons';
@@ -25,7 +26,14 @@ export function ProductDetail({
   /** Why this was suggested here. Absent when browsing rather than recommended. */
   reason?: string;
 }) {
-  const retailer = getRetailer(product.retailerId);
+  // Connected retailers describe themselves over the network, so the registry
+  // needs a chance to fill in before this renders their name.
+  const [, setHydrated] = useState(0);
+  useEffect(() => {
+    void hydrateRetailers().then(() => setHydrated((n) => n + 1));
+  }, []);
+
+  const retailer = lookupRetailer(product.retailerId);
   const dimensions = product.dimensions ? formatDimensions(product.dimensions) : null;
   // Only a connected retailer gets a buy link. With the reference catalogue
   // there is nothing to link to, and a button that goes nowhere is worse than
@@ -87,7 +95,7 @@ export function ProductDetail({
 
       {purchasable && (
         <a
-          href={buildOutboundUrl(product.url, undefined, undefined)}
+          href={outboundUrl(product.url, product.retailerId)}
           target="_blank"
           rel="noopener noreferrer nofollow sponsored"
           onClick={() =>

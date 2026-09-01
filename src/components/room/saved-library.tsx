@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import type { Product, Room, SavedProduct } from '@/types/domain';
 import { roomRepository, savedProductRepository } from '@/lib/data/repositories';
 import { productRepository } from '@/lib/products/repository';
-import { getRetailer } from '@/lib/products/catalog';
+import { lookupRetailer } from '@/lib/products/retailers';
 import { formatPrice } from '@/lib/utils';
 import { track } from '@/lib/analytics/analytics';
 import { Button, IconButton } from '@/components/ui/button';
@@ -185,7 +185,7 @@ export function SavedLibrary() {
  * it needs to be.
  */
 function SavedProductRow({ product, onRemove }: { product: Product; onRemove: () => void }) {
-  const retailer = getRetailer(product.retailerId);
+  const retailer = lookupRetailer(product.retailerId);
 
   return (
     <li className="flex items-center gap-4 py-4">

@@ -2,7 +2,7 @@
 
 import type { Product, Recommendation } from '@/types/domain';
 import { cn, formatPrice } from '@/lib/utils';
-import { getRetailer } from '@/lib/products/catalog';
+import { lookupRetailer } from '@/lib/products/retailers';
 import { Skeleton } from '@/components/ui/surfaces';
 
 /**
@@ -25,7 +25,7 @@ export function ProductCard({
   className?: string;
 }) {
   const { product } = recommendation;
-  const retailer = getRetailer(product.retailerId);
+  const retailer = lookupRetailer(product.retailerId);
 
   return (
     <button

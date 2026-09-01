@@ -148,25 +148,3 @@ class ResolvingProductRepository implements ProductRepository {
 
 export const productRepository: ProductRepository = new ResolvingProductRepository();
 
-/**
- * Builds the outbound link for a product, attaching affiliate attribution when
- * the retailer has a programme.
- *
- * Callers must check `productRepository.isReference` first: with the bundled
- * catalogue these URLs are placeholders and must not be presented as a way to
- * buy anything.
- */
-export function buildOutboundUrl(
-  productUrl: string,
-  affiliateParam: string | undefined,
-  affiliateTag: string | undefined,
-): string {
-  if (!affiliateParam || !affiliateTag) return productUrl;
-  try {
-    const url = new URL(productUrl);
-    url.searchParams.set(affiliateParam, affiliateTag);
-    return url.toString();
-  } catch {
-    return productUrl;
-  }
-}
