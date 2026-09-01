@@ -38,20 +38,31 @@ const config: Config = {
       danger: 'rgb(var(--c-danger) / <alpha-value>)',
     },
 
+    /**
+     * A 4px ramp. Layout should stay on the whole steps (2, 3, 4, 6, 8, 12, 16);
+     * the half-steps and odd values exist for control sizing and optical nudges,
+     * not for page rhythm.
+     */
     spacing: {
       0: '0px',
       px: '1px',
       0.5: '2px',
       1: '4px',
+      1.5: '6px',
       2: '8px',
+      2.5: '10px',
       3: '12px',
+      3.5: '14px',
       4: '16px',
       5: '20px',
       6: '24px',
       7: '28px',
       8: '32px',
+      9: '36px',
       10: '40px',
+      11: '44px',
       12: '48px',
+      13: '52px',
       14: '56px',
       16: '64px',
       20: '80px',

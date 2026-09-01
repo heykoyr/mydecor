@@ -1,5 +1,27 @@
 import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+/**
+ * The design system renames the type scale (`text-body`, `text-h2`, …), and
+ * tailwind-merge cannot know that. Left unconfigured it treats every `text-*`
+ * class as one conflict group, so `text-body text-inverse` silently drops the
+ * colour — which is exactly how a primary button ends up with invisible text.
+ *
+ * Registering the scale's literal names as font sizes keeps sizes and colours in
+ * separate groups. Any new step added to `fontSize` in the Tailwind config must
+ * be added here too.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      'font-size': [
+        {
+          text: ['display', 'h1', 'h2', 'h3', 'body-lg', 'body', 'body-sm', 'caption', 'label'],
+        },
+      ],
+    },
+  },
+});
 
 /** Merge conditional class names, with later Tailwind utilities winning. */
 export function cn(...inputs: ClassValue[]): string {
