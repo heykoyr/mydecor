@@ -1,5 +1,5 @@
 import type { Product, ProductCategory, RoomType } from '@/types/domain';
-import { CATALOG_IS_REFERENCE, PRODUCTS } from './catalog';
+import { CATALOG_IS_REFERENCE, PRODUCTS, renderArtworkAtAspect } from './catalog';
 
 /**
  * The catalogue boundary.
@@ -27,6 +27,15 @@ export interface ProductRepository {
   byId(id: string): Promise<Product | null>;
   byIds(ids: string[]): Promise<Product[]>;
   all(): Promise<Product[]>;
+  /**
+   * Artwork laid out for a target aspect ratio.
+   *
+   * Products that are cut to a surface look wrong when a fixed image is
+   * stretched to fit it. A source that can render to order honours the request;
+   * one that serves fixed photography returns its usual image, and the caller
+   * gets correct behaviour either way.
+   */
+  artworkFor(product: Product, aspectRatio: number): string;
 }
 
 class StaticProductRepository implements ProductRepository {
@@ -60,6 +69,10 @@ class StaticProductRepository implements ProductRepository {
 
   async all(): Promise<Product[]> {
     return PRODUCTS;
+  }
+
+  artworkFor(product: Product, aspectRatio: number): string {
+    return renderArtworkAtAspect(product.id, aspectRatio) ?? product.image.src;
   }
 }
 

@@ -1,7 +1,8 @@
 'use client';
 
 import type { Opportunity, Product, Quad, Visualization } from '@/types/domain';
-import { fitInQuad, fitInQuadByHeight, quadToPixels } from '@/lib/geometry';
+import { fitInQuad, fitInQuadByHeight, quadHeight, quadToPixels, quadWidth } from '@/lib/geometry';
+import { productRepository } from '@/lib/products/repository';
 import { decodeImage } from '@/lib/image/prepare';
 import {
   drawContactShadow,
@@ -99,10 +100,7 @@ export class CanvasCompositeProvider implements VisualizationProvider {
       );
     }
 
-    const [room, artwork] = await Promise.all([
-      loadImage(roomImageSrc),
-      loadImage(product.image.src),
-    ]);
+    const room = await loadImage(roomImageSrc);
     signal?.throwIfAborted();
 
     const canvas = document.createElement('canvas');
@@ -120,6 +118,24 @@ export class CanvasCompositeProvider implements VisualizationProvider {
       canvas.width,
       canvas.height,
     );
+
+    /*
+     * A product cut to a surface is stretched to fill it, so its artwork has to
+     * be laid out for that surface's shape rather than a fixed one. Without
+     * this, the same curtains render with tall narrow folds on a portrait
+     * window and smeared sideways on a wide landscape one — the photograph's
+     * orientation silently deforms the product.
+     */
+    const artworkSrc =
+      opportunity.placement === 'overlay_surface'
+        ? productRepository.artworkFor(
+            product,
+            quadWidth(target) / Math.max(quadHeight(target), 1e-6),
+          )
+        : product.image.src;
+
+    const artwork = await loadImage(artworkSrc);
+    signal?.throwIfAborted();
 
     // Sample the room before anything is drawn over it.
     const light = sampleRegionLight(ctx, target, canvas.width, canvas.height);

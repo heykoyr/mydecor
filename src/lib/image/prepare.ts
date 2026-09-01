@@ -81,6 +81,31 @@ function whenLoaded(image: HTMLImageElement, src: string): Promise<HTMLImageElem
   });
 }
 
+/**
+ * Decodes a blob with its EXIF orientation applied.
+ *
+ * Phone cameras record the sensor's pixels plus an orientation tag rather than
+ * rotating the data, so a photo taken in portrait is often stored landscape.
+ * `createImageBitmap` with `from-image` resolves that explicitly, giving
+ * dimensions that match what the user actually saw in the viewfinder. Browsers
+ * generally apply the tag to `<img>` too, but relying on that leaves the app's
+ * idea of portrait-versus-landscape at the mercy of the decoder.
+ */
+async function decodeOriented(source: Blob): Promise<CanvasImageSource & { width: number; height: number }> {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      return await createImageBitmap(source, { imageOrientation: 'from-image' });
+    } catch {
+      // Older Safari rejects the option; fall through to the element path.
+    }
+  }
+  const element = await decodeImage(source);
+  return Object.assign(element, {
+    width: element.naturalWidth,
+    height: element.naturalHeight,
+  });
+}
+
 /** Decodes a blob, honouring EXIF orientation where the browser supports it. */
 export async function decodeImage(source: Blob): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(source);
@@ -133,10 +158,13 @@ export async function prepareCapture(
   source: Blob,
   origin: CapturedImage['source'],
 ): Promise<{ image: CapturedImage; thumbnail: string; element: HTMLImageElement }> {
-  const decoded = await decodeImage(source);
-  const full = scaleToFit(decoded.naturalWidth, decoded.naturalHeight, MAX_EDGE);
+  const decoded = await decodeOriented(source);
+  const full = scaleToFit(decoded.width, decoded.height, MAX_EDGE);
   const canvas = toCanvas(decoded, full.width, full.height);
+  // Orientation is now baked into the pixels, so every later stage — analysis,
+  // hotspot geometry, compositing — reads one unambiguous shape.
   const src = canvas.toDataURL('image/jpeg', JPEG_QUALITY);
+  if ('close' in decoded && typeof decoded.close === 'function') decoded.close();
 
   const thumb = scaleToFit(full.width, full.height, THUMBNAIL_EDGE);
   const thumbnail = toCanvas(canvas, thumb.width, thumb.height).toDataURL(

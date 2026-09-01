@@ -655,6 +655,43 @@ const DRAFTS: Draft[] = [
 
 export const PRODUCTS: Product[] = DRAFTS.map(build);
 
+/**
+ * The parameters each product's artwork was generated from.
+ *
+ * Kept so artwork can be re-rendered at a different aspect ratio. A product cut
+ * to a surface — curtains on a window, a rug on a floor — must be laid out for
+ * the shape of *that* surface: generate a curtain at 1.1 and stretch it across a
+ * wide picture window and the folds smear sideways and the panels go squat.
+ * Re-rendering at the target's aspect keeps every feature in proportion.
+ *
+ * A live catalogue has photographs rather than parameters, which is why this is
+ * a detail of the static repository and not of the `Product` model.
+ */
+const ARTWORK_SPECS = new Map<string, { category: ProductCategory; hex: string; accentHex?: string }>(
+  DRAFTS.map((draft) => [
+    draft.id,
+    {
+      category: draft.category,
+      hex: draft.colorHex,
+      ...(draft.accentHex ? { accentHex: draft.accentHex } : {}),
+    },
+  ]),
+);
+
+/**
+ * Re-renders a product's artwork for a given aspect ratio, or returns the
+ * original when this product has no generative source.
+ */
+export function renderArtworkAtAspect(productId: string, aspectRatio: number): string | null {
+  const spec = ARTWORK_SPECS.get(productId);
+  if (!spec || !Number.isFinite(aspectRatio) || aspectRatio <= 0) return null;
+  return renderArtwork(spec.category, {
+    hex: spec.hex,
+    ...(spec.accentHex ? { accentHex: spec.accentHex } : {}),
+    aspectRatio,
+  });
+}
+
 export const RETAILERS_BY_ID = new Map(RETAILERS.map((retailer) => [retailer.id, retailer]));
 
 export function getRetailer(id: string): Retailer | undefined {

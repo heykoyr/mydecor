@@ -46,7 +46,7 @@ interface Rule {
   satisfiedBy: ObjectType[];
   /** Fraction of the target a satisfying object must cover to suppress the rule. */
   satisfiedAt: number;
-  region: (object: DetectedObject) => Quad;
+  region: (object: DetectedObject, context: Context) => Quad;
   anchor: (region: Quad) => Point;
   /** Optional extra gate beyond object presence. */
   applies?: (object: DetectedObject, context: Context) => boolean;
@@ -72,6 +72,39 @@ function expand(quad: Quad, sides: number, top: number, bottom: number): Quad {
   return subQuad(quad, -sides, -top, 1 + sides, 1 + bottom);
 }
 
+/**
+ * Where a curtain treatment actually goes.
+ *
+ * Curtains hang to the floor, so the drop is measured to the detected floor
+ * line rather than as a multiple of the window's own height. Scaling by the
+ * window is what leaves a wide, short picture window wearing curtains that stop
+ * halfway down the wall, while a tall narrow window gets them right — the same
+ * product behaving differently because of the window's proportions.
+ */
+function curtainRegion(object: DetectedObject, context: Context): Quad {
+  const box = object.boundingBox;
+  const floor = context.objects.find((other) => other.type === 'floor');
+
+  const top = Math.max(0, box.y - box.height * 0.14);
+  const sill = box.y + box.height;
+
+  // Where the floor is known, that is where the curtain stops — a fraction past
+  // the wall line so it reads as touching rather than hovering. Only when the
+  // floor was not detected do we fall back to a window-relative drop, which is
+  // a guess and is why it must not be allowed to override a real measurement.
+  const bottom = clamp(
+    floor ? floor.boundingBox.y + 0.015 : sill + box.height * 0.9,
+    sill + box.height * 0.15,
+    1,
+  );
+
+  const sides = box.width * 0.18;
+  const left = Math.max(0, box.x - sides);
+  const right = Math.min(1, box.x + box.width + sides);
+
+  return quadFromBox({ x: left, y: top, width: right - left, height: bottom - top });
+}
+
 const RULES: Partial<Record<ObjectType, Rule[]>> = {
   window: [
     {
@@ -84,11 +117,11 @@ const RULES: Partial<Record<ObjectType, Rule[]>> = {
       basePriority: 0.9,
       satisfiedBy: ['curtains'],
       satisfiedAt: 0.35,
-      region: (object) => expand(surfaceOf(object), 0.18, 0.12, 0.55),
+      region: (object, context) => curtainRegion(object, context),
       // The region extends well below the sill to allow for a full drop, so the
       // mark is placed towards its top — over the glass, which is what the user
       // is being asked about.
-      anchor: (region) => sampleQuad(region, 0.5, 0.32),
+      anchor: (region) => sampleQuad(region, 0.5, 0.28),
     },
   ],
 
@@ -282,7 +315,7 @@ export function deriveOpportunities(
       if (rule.applies && !rule.applies(object, context)) continue;
       if (alreadySatisfied(object, rule, objects)) continue;
 
-      const region = rule.region(object);
+      const region = rule.region(object, context);
       const priority = clamp(
         rule.basePriority +
           (object.confidence - MIN_RENDER_CONFIDENCE) * 0.25 +
