@@ -10,6 +10,24 @@
  * a component. Import `brand` instead.
  */
 
+/**
+ * The origin this build should treat as canonical.
+ *
+ * An explicit `NEXT_PUBLIC_APP_URL` always wins. Otherwise a production build on
+ * Vercel resolves to the project's stable domain rather than the immutable
+ * per-deployment host, so metadata and share links do not point at a URL that
+ * only ever names one build; preview builds fall back to their own host, and
+ * local development to localhost.
+ */
+function resolveOrigin(): string {
+  if (process.env.NEXT_PUBLIC_APP_URL) return process.env.NEXT_PUBLIC_APP_URL;
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  }
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+  return 'http://localhost:3000';
+}
+
 export const brand = {
   /** Product name, as displayed. */
   name: 'MyDecor',
@@ -28,10 +46,14 @@ export const brand = {
   promise: 'Take a photo of your room and see what could work in it.',
 
   /**
-   * Canonical origin. Set NEXT_PUBLIC_APP_URL per environment; the fallback
-   * keeps local development and previews working without configuration.
+   * Canonical origin.
+   *
+   * An explicit NEXT_PUBLIC_APP_URL wins. Failing that, Vercel's own
+   * per-deployment host is used, so preview builds resolve their metadata
+   * against themselves rather than against localhost. Local development falls
+   * through to the last case.
    */
-  url: process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000',
+  url: resolveOrigin(),
 
   /** Locale and currency defaults until a user preference exists. */
   locale: 'en-GB',
