@@ -147,7 +147,7 @@ export const OPPORTUNITY_TYPES = [
   'style_the_surface',
   'dress_the_bed',
   'anchor_the_tv_wall',
-  'add_greenery',
+  'organise_the_desk_wall',
 ] as const;
 export type OpportunityType = (typeof OPPORTUNITY_TYPES)[number];
 
@@ -172,6 +172,14 @@ export const PRODUCT_CATEGORIES = [
   'headboards',
   'baskets',
   'vases',
+  // Wall organisation — the desk wall, which is where a home office is either
+  // sorted out or permanently cluttered.
+  'pegboards',
+  'noticeboards',
+  'wall_clocks',
+  // Greenery that hangs rather than stands, and seating that sits on the floor.
+  'hanging_plants',
+  'floor_cushions',
 ] as const;
 export type ProductCategory = (typeof PRODUCT_CATEGORIES)[number];
 
@@ -309,6 +317,14 @@ export interface RecommendationFactors {
   priceFit: number;
   availability: number;
   popularity: number;
+  /**
+   * Suitability for the room's measured conditions rather than its taste.
+   *
+   * Today this is a plant's light requirement against the room's actual
+   * lighting: recommending a fiddle leaf fig for a dim hallway sells something
+   * that will die, which is a worse outcome than selling nothing.
+   */
+  contextFit: number;
 }
 
 export interface Recommendation {

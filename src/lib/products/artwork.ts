@@ -446,6 +446,140 @@ function bedding({ hex, aspectRatio }: ArtworkSpec): string {
   );
 }
 
+
+/**
+ * A wall board — pegboard or noticeboard.
+ *
+ * One generator, two products: the difference between them is the surface
+ * pattern, and duplicating eighty lines to change a fill would be how this file
+ * starts rotting.
+ */
+function wallBoard(spec: ArtworkSpec, kind: 'peg' | 'notice'): string {
+  const w = 900;
+  const h = Math.round(w / spec.aspectRatio);
+  const frame = spec.accentHex ?? shade(spec.hex, -0.3);
+
+  let surface = '';
+  if (kind === 'peg') {
+    const step = w / 22;
+    const holes: string[] = [];
+    for (let y = step; y < h - step * 0.5; y += step) {
+      for (let x = step; x < w - step * 0.5; x += step) {
+        holes.push(`<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${(step * 0.13).toFixed(1)}"/>`);
+      }
+    }
+    surface = `<g fill="#000" opacity="0.28">${holes.join('')}</g>`;
+  } else {
+    // Cork reads as fine speckle rather than a flat fill.
+    const specks: string[] = [];
+    for (let i = 0; i < 260; i += 1) {
+      const x = (Math.sin(i * 12.9898) * 43758.5453) % 1;
+      const y = (Math.sin(i * 78.233) * 43758.5453) % 1;
+      specks.push(
+        `<rect x="${(Math.abs(x) * w).toFixed(1)}" y="${(Math.abs(y) * h).toFixed(1)}" width="3" height="2" rx="1"/>`,
+      );
+    }
+    surface = `<g fill="#000" opacity="0.16">${specks.join('')}</g>`;
+  }
+
+  return svg(
+    w,
+    h,
+    `<defs>${shading('s', 'y')}</defs>
+     <g>
+       <rect width="${w}" height="${h}" rx="6" fill="${frame}"/>
+       <rect x="${w * 0.022}" y="${h * 0.03}" width="${w * 0.956}" height="${h * 0.94}" rx="3" fill="${spec.hex}"/>
+       ${surface}
+       <rect width="${w}" height="${h}" rx="6" fill="url(#s)"/>
+     </g>`,
+  );
+}
+
+function wallClock({ hex, accentHex = '#2c2924', aspectRatio }: ArtworkSpec): string {
+  const w = 500;
+  const h = Math.round(w / aspectRatio);
+  const cx = w / 2;
+  const cy = h / 2;
+  const r = Math.min(w, h) / 2 - 4;
+  const ticks = Array.from({ length: 12 }, (_, i) => {
+    const angle = (i / 12) * Math.PI * 2 - Math.PI / 2;
+    const outer = r * 0.86;
+    const inner = r * (i % 3 === 0 ? 0.7 : 0.78);
+    return `<line x1="${(cx + Math.cos(angle) * inner).toFixed(1)}" y1="${(cy + Math.sin(angle) * inner).toFixed(1)}" x2="${(cx + Math.cos(angle) * outer).toFixed(1)}" y2="${(cy + Math.sin(angle) * outer).toFixed(1)}" stroke="${accentHex}" stroke-width="${i % 3 === 0 ? 7 : 3}" stroke-linecap="round"/>`;
+  }).join('');
+
+  return svg(
+    w,
+    h,
+    `<defs>${shading('s', 'y')}</defs>
+     <g>
+       <circle cx="${cx}" cy="${cy}" r="${r}" fill="${accentHex}"/>
+       <circle cx="${cx}" cy="${cy}" r="${r * 0.92}" fill="${hex}"/>
+       ${ticks}
+       <line x1="${cx}" y1="${cy}" x2="${cx}" y2="${cy - r * 0.5}" stroke="${accentHex}" stroke-width="8" stroke-linecap="round"/>
+       <line x1="${cx}" y1="${cy}" x2="${cx + r * 0.36}" y2="${cy + r * 0.24}" stroke="${accentHex}" stroke-width="6" stroke-linecap="round"/>
+       <circle cx="${cx}" cy="${cy}" r="${r * 0.05}" fill="${accentHex}"/>
+       <circle cx="${cx}" cy="${cy}" r="${r}" fill="url(#s)"/>
+     </g>`,
+  );
+}
+
+/** A trailing plant, anchored at the top the way a hung pot actually is. */
+function hangingPlant({ hex, accentHex = '#b08a63', aspectRatio }: ArtworkSpec): string {
+  const w = 400;
+  const h = Math.round(w / aspectRatio);
+  const cx = w / 2;
+  const potTop = h * 0.16;
+  const potBottom = h * 0.4;
+
+  const vine = (dx: number, length: number, tone: string) => {
+    const tip = potBottom + length;
+    const leaves = Array.from({ length: Math.max(3, Math.round(length / (h * 0.09))) }, (_, i) => {
+      const t = (i + 1) / (Math.round(length / (h * 0.09)) + 1);
+      const y = potBottom + length * t;
+      const x = cx + dx * t;
+      const side = i % 2 === 0 ? 1 : -1;
+      return `<ellipse cx="${(x + side * w * 0.05).toFixed(1)}" cy="${y.toFixed(1)}" rx="${(w * 0.055).toFixed(1)}" ry="${(w * 0.032).toFixed(1)}" fill="${tone}" transform="rotate(${side * 18} ${(x + side * w * 0.05).toFixed(1)} ${y.toFixed(1)})"/>`;
+    }).join('');
+    return `<path d="M${cx} ${potBottom} Q${cx + dx * 0.6} ${(potBottom + length * 0.55).toFixed(1)} ${(cx + dx).toFixed(1)} ${tip.toFixed(1)}" stroke="${shade(tone, -0.2)}" stroke-width="3" fill="none"/>${leaves}`;
+  };
+
+  return svg(
+    w,
+    h,
+    `<defs>${shading('s')}</defs>
+     <g>
+       <path d="M${cx - w * 0.26} ${potTop} L${cx} ${h * 0.02} L${cx + w * 0.26} ${potTop}" stroke="${shade(accentHex, -0.25)}" stroke-width="2.5" fill="none"/>
+       ${vine(-w * 0.3, h * 0.5, shade(hex, -0.12))}
+       ${vine(w * 0.26, h * 0.58, hex)}
+       ${vine(-w * 0.05, h * 0.44, shade(hex, 0.14))}
+       <path d="M${cx - w * 0.26} ${potTop} L${cx + w * 0.26} ${potTop} L${cx + w * 0.2} ${potBottom} L${cx - w * 0.2} ${potBottom} Z" fill="${accentHex}"/>
+       <path d="M${cx - w * 0.26} ${potTop} L${cx + w * 0.26} ${potTop} L${cx + w * 0.2} ${potBottom} L${cx - w * 0.2} ${potBottom} Z" fill="url(#s)"/>
+     </g>`,
+  );
+}
+
+/** A floor pouf: squat, seam-topped, sitting on the floor rather than a sofa. */
+function floorCushion({ hex, aspectRatio }: ArtworkSpec): string {
+  const w = 500;
+  const h = Math.round(w / aspectRatio);
+  return svg(
+    w,
+    h,
+    `<defs><radialGradient id="p" cx="0.4" cy="0.28" r="0.85">
+       <stop offset="0" stop-color="#fff" stop-opacity="0.2"/>
+       <stop offset="1" stop-color="#000" stop-opacity="0.24"/>
+     </radialGradient></defs>
+     <g>
+       <path d="M${w * 0.06} ${h * 0.42} Q${w * 0.5} ${h * 0.06} ${w * 0.94} ${h * 0.42}
+                L${w * 0.9} ${h * 0.9} Q${w * 0.5} ${h * 1.02} ${w * 0.1} ${h * 0.9} Z" fill="${hex}"/>
+       <path d="M${w * 0.06} ${h * 0.42} Q${w * 0.5} ${h * 0.06} ${w * 0.94} ${h * 0.42}
+                L${w * 0.9} ${h * 0.9} Q${w * 0.5} ${h * 1.02} ${w * 0.1} ${h * 0.9} Z" fill="url(#p)"/>
+       <path d="M${w * 0.08} ${h * 0.44} Q${w * 0.5} ${h * 0.6} ${w * 0.92} ${h * 0.44}" stroke="#000" stroke-opacity="0.14" stroke-width="${h * 0.02}" fill="none"/>
+     </g>`,
+  );
+}
+
 type Generator = (spec: ArtworkSpec) => string;
 
 const GENERATORS: Record<ProductCategory, Generator> = {
@@ -469,6 +603,11 @@ const GENERATORS: Record<ProductCategory, Generator> = {
   headboards: bedding,
   baskets: basket,
   vases: vase,
+  pegboards: (spec) => wallBoard(spec, 'peg'),
+  noticeboards: (spec) => wallBoard(spec, 'notice'),
+  wall_clocks: wallClock,
+  hanging_plants: hangingPlant,
+  floor_cushions: floorCushion,
 };
 
 /** Renders artwork for a category. Deterministic: same spec, same output. */

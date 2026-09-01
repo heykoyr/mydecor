@@ -56,7 +56,15 @@ export class VisualizationError extends Error {
 }
 
 /**
- * Where the product actually goes.
+ * Where the product actually goes, in pixels.
+ *
+ * The region arrives already converted to pixel space, and that is not an
+ * incidental detail. Normalised (0-1) coordinates are anisotropic on any photo
+ * that is not square: half the width and half the height of a 16:9 image are
+ * both 0.5, but one is 1.78 times the other on screen. Fitting a product to its
+ * surface in that space stretches it by the photograph's own aspect ratio — a
+ * round clock comes out an ellipse. Pixel space is the only space in which
+ * "keep this product's proportions" means anything.
  *
  * The opportunity supplies the surface; the placement mode decides both how the
  * product sits on it and which axis its `coverage` refers to.
@@ -68,8 +76,8 @@ export class VisualizationError extends Error {
  * edge of the region, which is what makes a lamp meet the floor rather than
  * hover above it.
  */
-function placementQuad(opportunity: Opportunity, product: Product): Quad {
-  const { region, placement } = opportunity;
+function placementQuad(opportunity: Opportunity, product: Product, region: Quad): Quad {
+  const { placement } = opportunity;
   const aspect = product.image.aspectRatio;
 
   switch (placement) {
@@ -114,11 +122,8 @@ export class CanvasCompositeProvider implements VisualizationProvider {
 
     ctx.drawImage(room, 0, 0);
 
-    const target = quadToPixels(
-      placementQuad(opportunity, product),
-      canvas.width,
-      canvas.height,
-    );
+    const region = quadToPixels(opportunity.region, canvas.width, canvas.height);
+    const target = placementQuad(opportunity, product, region);
 
     /*
      * A product cut to a surface is stretched to fill it, so its artwork has to

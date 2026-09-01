@@ -348,6 +348,7 @@ export function RoomExperience({
             priceFit: 0,
             availability: 0,
             popularity: 0,
+            contextFit: 0,
           },
           reason: 'You picked this from Discover.',
         } satisfies Recommendation);

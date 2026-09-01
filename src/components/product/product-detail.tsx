@@ -41,9 +41,15 @@ export function ProductDetail({
   const purchasable = !productRepository.isReference;
   const retailerName = retailer?.name ?? 'the retailer';
 
+  const care = product.metadata ?? {};
+
   const attributes = [
     ['Material', product.material],
     ['Colour', product.color],
+    // Care requirements matter more than specification for anything living.
+    ...(care.light ? [['Light', `${care.light[0]!.toUpperCase()}${care.light.slice(1)}`]] : []),
+    ...(care.water ? [['Water', care.water]] : []),
+    ...(care.petSafe ? [['Pet safe', care.petSafe]] : []),
     ...(dimensions ? [['Size', dimensions]] : []),
     ...(retailer ? [['Sold by', retailer.name]] : []),
     [

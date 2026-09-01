@@ -129,7 +129,7 @@ const RULES: Partial<Record<ObjectType, Rule[]>> = {
     {
       type: 'dress_empty_wall',
       placement: 'mounted',
-      categories: ['wall_art', 'mirrors', 'shelving'],
+      categories: ['wall_art', 'mirrors', 'shelving', 'wall_clocks', 'hanging_plants'],
       title: 'Fill this wall',
       rationale:
         'A blank wall this size is the single biggest change available in this room.',
@@ -163,7 +163,7 @@ const RULES: Partial<Record<ObjectType, Rule[]>> = {
     {
       type: 'fill_empty_corner',
       placement: 'standing',
-      categories: ['floor_lamps', 'plants', 'planters'],
+      categories: ['floor_lamps', 'plants', 'planters', 'floor_cushions'],
       title: 'Use this corner',
       rationale: 'Empty corners read as unfinished. One tall object is usually enough.',
       basePriority: 0.7,
@@ -237,6 +237,20 @@ const RULES: Partial<Record<ObjectType, Rule[]>> = {
   ],
 
   desk: [
+    {
+      type: 'organise_the_desk_wall',
+      placement: 'mounted',
+      categories: ['pegboards', 'noticeboards', 'shelving'],
+      title: 'Organise this wall',
+      rationale:
+        'The wall above a desk is the difference between a workspace and a pile. Vertical storage buys back the surface.',
+      basePriority: 0.68,
+      satisfiedBy: ['shelving', 'artwork', 'storage'],
+      satisfiedAt: 0.2,
+      // The wall directly above the desk, not the desk itself.
+      region: (object) => subQuad(surfaceOf(object), 0.08, -1.55, 0.92, -0.12),
+      anchor: (region) => sampleQuad(region, 0.5, 0.5),
+    },
     {
       type: 'style_the_surface',
       placement: 'resting',

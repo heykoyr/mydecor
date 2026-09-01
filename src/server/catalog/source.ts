@@ -77,6 +77,11 @@ export const CATEGORY_KEYWORDS: Record<ProductCategory, string> = {
   headboards: 'headboard bed',
   baskets: 'storage basket woven',
   vases: 'vase ceramic decorative',
+  pegboards: 'pegboard wall organiser desk',
+  noticeboards: 'cork noticeboard memo board',
+  wall_clocks: 'wall clock silent',
+  hanging_plants: 'hanging plant macrame planter',
+  floor_cushions: 'floor cushion pouffe ottoman',
 };
 
 /** Keeps a title readable on a product card. */
@@ -128,6 +133,11 @@ export const CATEGORY_ROOMS: Record<ProductCategory, RoomType[]> = {
   headboards: ['bedroom'],
   baskets: ['living_room', 'bedroom', 'bathroom', 'nursery', 'hallway'],
   vases: ['living_room', 'bedroom', 'dining_room', 'hallway'],
+  pegboards: ['home_office', 'kitchen', 'bedroom'],
+  noticeboards: ['home_office', 'kitchen', 'nursery', 'hallway'],
+  wall_clocks: ['living_room', 'kitchen', 'home_office', 'hallway', 'bedroom'],
+  hanging_plants: ['living_room', 'bedroom', 'home_office', 'bathroom', 'hallway'],
+  floor_cushions: ['living_room', 'bedroom', 'nursery', 'home_office'],
 };
 
 /**
@@ -162,6 +172,11 @@ export const CATEGORY_PLACEMENT: Record<
   headboards: { aspectRatio: 1.8, coverage: 0.9, placements: ['mounted'] },
   baskets: { aspectRatio: 0.9, coverage: 0.3, placements: ['standing', 'resting'] },
   vases: { aspectRatio: 0.45, coverage: 0.5, placements: ['resting'] },
+  pegboards: { aspectRatio: 1.4, coverage: 0.4, placements: ['mounted'] },
+  noticeboards: { aspectRatio: 1.35, coverage: 0.38, placements: ['mounted'] },
+  wall_clocks: { aspectRatio: 1, coverage: 0.16, placements: ['mounted'] },
+  hanging_plants: { aspectRatio: 0.6, coverage: 0.17, placements: ['mounted'] },
+  floor_cushions: { aspectRatio: 1.25, coverage: 0.3, placements: ['standing', 'resting'] },
 };
 
 export interface NormaliseInput {

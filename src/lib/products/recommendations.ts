@@ -14,7 +14,7 @@ import { productRepository } from './repository';
 /**
  * The recommendation engine.
  *
- * Ranking is a weighted blend of seven factors, kept entirely out of the UI so
+ * Ranking is a weighted blend of eight factors, kept entirely out of the UI so
  * it can be tuned — eventually from engagement data — without touching a
  * component. The weights below are a starting position, not a result: they
  * encode a product opinion (relevance to the spot beats everything; price is a
@@ -26,13 +26,14 @@ import { productRepository } from './repository';
  */
 
 const WEIGHTS: RecommendationFactors = {
-  categoryRelevance: 0.3,
-  styleMatch: 0.18,
-  paletteMatch: 0.16,
-  sizeFit: 0.14,
+  categoryRelevance: 0.28,
+  styleMatch: 0.16,
+  paletteMatch: 0.14,
+  sizeFit: 0.12,
   priceFit: 0.1,
-  availability: 0.06,
-  popularity: 0.06,
+  availability: 0.05,
+  popularity: 0.05,
+  contextFit: 0.1,
 };
 
 /** Below this the item is a worse suggestion than showing fewer items. */
@@ -89,6 +90,25 @@ function scorePopularity(product: Product): number {
   return quality * 0.75 + confidence * 0.25;
 }
 
+/**
+ * How well a living product suits the light the room actually has.
+ *
+ * The room's lighting is measured from the photograph, and a plant's
+ * requirement is on the product. Anything without a stated requirement scores
+ * neutrally rather than being penalised for not being a plant.
+ */
+const LIGHT_FIT: Record<string, Record<RoomAnalysis['lighting'], number>> = {
+  bright: { bright: 1, natural: 0.85, artificial: 0.35, dim: 0.15 },
+  indirect: { bright: 0.85, natural: 1, artificial: 0.6, dim: 0.45 },
+  low: { bright: 0.7, natural: 0.85, artificial: 0.95, dim: 1 },
+};
+
+function scoreContextFit(product: Product, analysis: RoomAnalysis): number {
+  const requirement = product.metadata?.light;
+  if (!requirement) return 0.7;
+  return LIGHT_FIT[requirement]?.[analysis.lighting] ?? 0.7;
+}
+
 const AVAILABILITY_SCORE = {
   in_stock: 1,
   low_stock: 0.82,
@@ -121,6 +141,7 @@ function scoreFactors(
     priceFit: scorePriceFit(product, preferences),
     availability: AVAILABILITY_SCORE[product.availability],
     popularity: scorePopularity(product),
+    contextFit: scoreContextFit(product, analysis),
   };
 }
 
@@ -141,6 +162,12 @@ function explain(
   context: RecommendationContext,
 ): string {
   const { analysis, preferences } = context;
+
+  // Light fit leads when it is decisive: it is the one factor here that
+  // predicts whether the thing will still be alive in a month.
+  if (product.metadata?.light && factors.contextFit >= 0.95) {
+    return `Happy in ${analysis.lighting === 'dim' ? 'low' : analysis.lighting} light, which is what this room has.`;
+  }
 
   if (factors.styleMatch > 0.75) {
     const shared = product.styles.find(

@@ -89,6 +89,11 @@ const CATEGORY_DEFAULTS: Record<
   headboards: { aspectRatio: 1.8, coverage: 0.9, placements: ['mounted'] },
   baskets: { aspectRatio: 0.9, coverage: 0.3, placements: ['standing', 'resting'] },
   vases: { aspectRatio: 0.45, coverage: 0.5, placements: ['resting'] },
+  pegboards: { aspectRatio: 1.4, coverage: 0.4, placements: ['mounted'] },
+  noticeboards: { aspectRatio: 1.35, coverage: 0.38, placements: ['mounted'] },
+  wall_clocks: { aspectRatio: 1, coverage: 0.16, placements: ['mounted'] },
+  hanging_plants: { aspectRatio: 0.6, coverage: 0.17, placements: ['mounted'] },
+  floor_cushions: { aspectRatio: 1.25, coverage: 0.3, placements: ['standing', 'resting'] },
 };
 
 interface Draft {
@@ -111,6 +116,11 @@ interface Draft {
   rating?: { average: number; count: number };
   /** Overrides the category default when this item is unusually sized. */
   coverage?: number;
+  /**
+   * Free-form attributes shown on product detail. For plants this carries the
+   * care requirements, and `light` is read by the recommendation engine.
+   */
+  metadata?: Record<string, string>;
 }
 
 function build(draft: Draft): Product {
@@ -148,6 +158,7 @@ function build(draft: Draft): Product {
     roomCompatibility: draft.rooms,
     supportedPlacements: defaults.placements,
     coverage: draft.coverage ?? defaults.coverage,
+    ...(draft.metadata ? { metadata: draft.metadata } : {}),
     ...(draft.rating ? { rating: draft.rating } : {}),
   };
 }
@@ -485,6 +496,7 @@ const DRAFTS: Draft[] = [
     dimensions: { height: 140, diameter: 24 },
     rooms: [...LIVING, ...SLEEPING],
     tags: ['bright indirect light', 'pot included'],
+    metadata: { light: 'bright', water: 'Weekly', petSafe: 'No - toxic to cats and dogs' },
     rating: { average: 4.1, count: 723 },
   },
   {
@@ -501,6 +513,7 @@ const DRAFTS: Draft[] = [
     dimensions: { height: 120, diameter: 22 },
     rooms: ANYWHERE,
     tags: ['low light tolerant', 'pet safe'],
+    metadata: { light: 'low', water: 'Fortnightly', petSafe: 'Yes' },
     rating: { average: 4.5, count: 398 },
   },
   {
@@ -657,6 +670,174 @@ const DRAFTS: Draft[] = [
     rooms: ANYWHERE,
     tags: ['handles', 'plant cover'],
     rating: { average: 4.4, count: 402 },
+  },
+
+  /* Wall organisation - the desk wall */
+  {
+    id: 'p_pegboard_oak',
+    name: 'Oak Pegboard Organiser',
+    category: 'pegboards',
+    retailerId: 'ret_northfold',
+    price: 34000,
+    color: 'Natural oak',
+    colorHex: '#d3b183',
+    accentHex: '#8a6a44',
+    material: 'Birch ply',
+    styles: ['scandinavian', 'minimal', 'contemporary'],
+    dimensions: { width: 60, height: 44, depth: 2 },
+    rooms: ['home_office', 'kitchen', 'bedroom'],
+    tags: ['hooks included', 'desk organisation'],
+    rating: { average: 4.7, count: 186 },
+  },
+  {
+    id: 'p_pegboard_steel',
+    name: 'Steel Pegboard Panel',
+    category: 'pegboards',
+    retailerId: 'ret_kestrel',
+    price: 46000,
+    color: 'Matte black',
+    colorHex: '#3a3a38',
+    accentHex: '#222220',
+    material: 'Powder-coated steel',
+    styles: ['industrial', 'contemporary', 'minimal'],
+    dimensions: { width: 80, height: 55, depth: 2 },
+    rooms: ['home_office', 'kitchen'],
+    tags: ['magnetic', 'modular'],
+    rating: { average: 4.6, count: 94 },
+  },
+  {
+    id: 'p_notice_cork',
+    name: 'Cork Notice Board',
+    category: 'noticeboards',
+    retailerId: 'ret_marlow',
+    price: 21000,
+    color: 'Cork',
+    colorHex: '#c9a273',
+    accentHex: '#7d6242',
+    material: 'Natural cork, pine frame',
+    styles: ['minimal', 'scandinavian', 'rustic'],
+    dimensions: { width: 60, height: 45, depth: 2 },
+    rooms: ['home_office', 'kitchen', 'nursery'],
+    tags: ['pins included', 'self healing'],
+    rating: { average: 4.4, count: 312 },
+  },
+  {
+    id: 'p_notice_linen',
+    name: 'Linen Pinboard',
+    category: 'noticeboards',
+    retailerId: 'ret_northfold',
+    price: 28000,
+    color: 'Flax',
+    colorHex: '#cdbfa4',
+    accentHex: '#6f6552',
+    material: 'Linen over cork',
+    styles: ['japandi', 'minimal', 'contemporary'],
+    dimensions: { width: 70, height: 50, depth: 3 },
+    rooms: ['home_office', 'bedroom'],
+    tags: ['softer than cork', 'framed'],
+    rating: { average: 4.8, count: 121 },
+  },
+
+  /* Wall clocks */
+  {
+    id: 'p_clock_silent',
+    name: 'Silent Sweep Wall Clock',
+    category: 'wall_clocks',
+    retailerId: 'ret_kestrel',
+    price: 18000,
+    color: 'Chalk',
+    colorHex: '#efece5',
+    accentHex: '#2e2c28',
+    material: 'Steel, glass',
+    styles: ['minimal', 'scandinavian', 'contemporary'],
+    dimensions: { diameter: 30, depth: 4 },
+    rooms: ['living_room', 'kitchen', 'home_office', 'bedroom'],
+    tags: ['silent movement', 'no ticking'],
+    rating: { average: 4.5, count: 640 },
+  },
+  {
+    id: 'p_clock_brass',
+    name: 'Brass Rim Wall Clock',
+    category: 'wall_clocks',
+    retailerId: 'ret_marlow',
+    price: 39000,
+    color: 'Antique brass',
+    colorHex: '#efe7d6',
+    accentHex: '#a8853f',
+    material: 'Brass, glass',
+    styles: ['mid_century', 'traditional', 'eclectic'],
+    dimensions: { diameter: 36, depth: 5 },
+    rooms: ['living_room', 'dining_room', 'hallway'],
+    tags: ['statement piece'],
+    rating: { average: 4.7, count: 158 },
+  },
+
+  /* Hanging greenery */
+  {
+    id: 'p_hang_pothos',
+    name: 'Trailing Pothos in a Macrame Hanger',
+    category: 'hanging_plants',
+    retailerId: 'ret_northfold',
+    price: 24000,
+    color: 'Green',
+    colorHex: '#4f7a45',
+    accentHex: '#b08a63',
+    material: 'Live plant, cotton hanger',
+    styles: ['eclectic', 'coastal', 'contemporary'],
+    dimensions: { height: 60, diameter: 16 },
+    rooms: ['living_room', 'bedroom', 'home_office', 'bathroom'],
+    tags: ['trailing', 'hanger included'],
+    metadata: { light: 'low', water: 'Weekly', petSafe: 'No - mildly toxic if chewed' },
+    rating: { average: 4.6, count: 274 },
+  },
+  {
+    id: 'p_hang_hearts',
+    name: 'String of Hearts, Hanging',
+    category: 'hanging_plants',
+    retailerId: 'ret_kestrel',
+    price: 19000,
+    color: 'Silver green',
+    colorHex: '#7f9a72',
+    accentHex: '#c9c2b6',
+    material: 'Live plant, ceramic pot',
+    styles: ['minimal', 'japandi', 'eclectic'],
+    dimensions: { height: 45, diameter: 12 },
+    rooms: ['living_room', 'bedroom', 'home_office'],
+    tags: ['drought tolerant', 'trailing'],
+    metadata: { light: 'bright', water: 'Sparingly', petSafe: 'Yes' },
+    rating: { average: 4.8, count: 203 },
+  },
+
+  /* Floor seating */
+  {
+    id: 'p_pouffe_woven',
+    name: 'Woven Floor Pouffe',
+    category: 'floor_cushions',
+    retailerId: 'ret_marlow',
+    price: 48000,
+    color: 'Natural',
+    colorHex: '#c8b394',
+    material: 'Cotton, jute',
+    styles: ['rustic', 'coastal', 'eclectic'],
+    dimensions: { height: 38, diameter: 50 },
+    rooms: ['living_room', 'bedroom', 'nursery'],
+    tags: ['extra seating', 'footrest'],
+    rating: { average: 4.5, count: 229 },
+  },
+  {
+    id: 'p_pouffe_velvet',
+    name: 'Velvet Floor Cushion',
+    category: 'floor_cushions',
+    retailerId: 'ret_kestrel',
+    price: 32000,
+    color: 'Deep teal',
+    colorHex: '#3f6169',
+    material: 'Cotton velvet',
+    styles: ['mid_century', 'eclectic', 'contemporary'],
+    dimensions: { width: 60, height: 20, depth: 60 },
+    rooms: ['living_room', 'bedroom', 'home_office'],
+    tags: ['floor seating', 'removable cover'],
+    rating: { average: 4.3, count: 141 },
   },
 ];
 
