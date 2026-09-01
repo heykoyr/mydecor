@@ -86,17 +86,22 @@ The app runs with no configuration at all — see below for what that costs.
 
 ### Environment variables
 
-Copy `.env.example` to `.env.local`. Every key is read server-side only; none is
-prefixed `NEXT_PUBLIC_`.
+Copy `.env.example` to `.env.local`. Every key is read server-side only except
+the two marked public, which travel in URLs the shopper follows.
 
-| Variable | Default | Effect |
+| Variable | Effect when unset | Effect when set |
 | --- | --- | --- |
-| `VISION_PROVIDER` | `auto` | `auto` uses a model when a key is present, otherwise the built-in analyser |
-| `ANTHROPIC_API_KEY` | — | Enables model-based room understanding |
-| `VISUALIZATION_PROVIDER` | `auto` | `composite` uses the built-in compositor; `inpaint` calls an external image model |
-| `INPAINT_API_URL` / `INPAINT_API_KEY` | — | Endpoint for generative in-room previews |
-| `CATALOG_PROVIDER` | `static` | `http` swaps the bundled catalogue for a live product feed |
-| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Canonical origin for metadata and share links |
+| `ANTHROPIC_API_KEY` | Room understanding is geometric only — surfaces, no furniture | Full object detection, which unlocks the sofa, bed, table, desk and TV ideas |
+| `VISION_PROVIDER` | `auto` — model when a key exists, otherwise on-device | `heuristic` forces the on-device analyser |
+| `ETSY_API_KEY` | Etsy is absent from the registry | Etsy listings join the catalogue |
+| `PRODUCT_FEEDS` | No feed-based retailers | Each mapped JSON feed becomes a retailer |
+| `IMAGE_HOST_ALLOWLIST` | Only Etsy's CDN is proxied | Adds the image hosts your feeds serve from |
+| `AFFILIATE_TAG` | Retailers report no affiliate programme | Outbound links carry attribution |
+| `NEXT_PUBLIC_AFFILIATE_TAG` | No tag appended | The value appended to outbound links |
+| `NEXT_PUBLIC_APP_URL` | Derived from Vercel, else localhost | Overrides the canonical origin |
+
+With none of them set the app still runs end to end: on-device analysis and the
+bundled reference catalogue, and it says so rather than implying otherwise.
 
 ## Market
 
