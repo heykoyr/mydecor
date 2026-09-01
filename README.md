@@ -98,6 +98,33 @@ prefixed `NEXT_PUBLIC_`.
 | `CATALOG_PROVIDER` | `static` | `http` swaps the bundled catalogue for a live product feed |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Canonical origin for metadata and share links |
 
+## Market
+
+Nigeria. `brand.locale` and `brand.currency` are `en-NG` and `NGN`, and the
+reference catalogue is priced in naira at figures set by hand rather than
+converted from another currency — a rate conversion is arithmetically correct
+and commercially meaningless.
+
+Prices render with `currencyDisplay: 'narrowSymbol'`, so a naira product shows ₦
+whatever locale the viewer's browser is set to, while a retailer quoting USD or
+GBP keeps its own symbol. The currency belongs to the product; the grouping and
+decimal marks belong to the reader.
+
+## Retailers
+
+| Retailer | How it is reached | Status |
+| --- | --- | --- |
+| Etsy | Open API v3, `ETSY_API_KEY` | Adapter implemented |
+| Amazon | Affiliate product feed, or PA-API with an approved Associates account | Via `PRODUCT_FEEDS` |
+| Temu | Affiliate programme is referral/link based — no product API or bulk feed | Not reachable as product data |
+| Jumia | Affiliate product feed | Via `PRODUCT_FEEDS` |
+| Konga | Affiliate product feed | Via `PRODUCT_FEEDS` |
+
+Only Etsy publishes a product-search API a third party can call. The others
+expose products to approved affiliates as a feed, which `FeedSource` consumes
+through a field mapping — so those are a configuration change, not new code. See
+`.env.example` for a worked mapping.
+
 ## Deployment
 
 Live at **https://mydecor-koyrstudio.vercel.app** (Vercel, project
