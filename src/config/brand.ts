@@ -55,9 +55,9 @@ export const brand = {
    */
   url: resolveOrigin(),
 
-  /** Locale and currency defaults until a user preference exists. */
-  locale: 'en-GB',
-  currency: 'GBP',
+  /** Home market. Sets the default currency and the reference catalogue's. */
+  locale: 'en-NG',
+  currency: 'NGN',
 
   /** Brand colour used for the browser theme colour and web manifest. */
   themeColor: { light: '#fbfaf7', dark: '#121110' },

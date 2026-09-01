@@ -44,15 +44,27 @@ export function lerp(a: number, b: number, t: number): number {
 }
 
 export function formatPrice(amount: number, currency: string): string {
-  // Undefined locale means the viewer's own, so a Nigerian shopper sees the
-  // naira symbol rather than a currency code. Retailers set the currency.
-  return new Intl.NumberFormat(undefined, {
+  const options: Intl.NumberFormatOptions = {
     style: 'currency',
     currency,
-    // Whole prices read cleaner in a browsing context; keep pence when present.
+    // `narrowSymbol` gives ₦ rather than "NGN" whatever locale the viewer's
+    // browser is set to. Grouping and decimal marks still follow their locale,
+    // which is the right split: the currency is the product's, the number
+    // formatting is theirs.
+    currencyDisplay: 'narrowSymbol',
+    // Whole prices read cleaner while browsing; keep minor units when present.
     minimumFractionDigits: Number.isInteger(amount) ? 0 : 2,
     maximumFractionDigits: 2,
-  }).format(amount);
+  };
+
+  try {
+    return new Intl.NumberFormat(undefined, options).format(amount);
+  } catch {
+    // Older engines reject `narrowSymbol`; the code prefix is an acceptable
+    // fallback and far better than throwing inside a product card.
+    const { currencyDisplay: _dropped, ...rest } = options;
+    return new Intl.NumberFormat(undefined, rest).format(amount);
+  }
 }
 
 /** `living_room` -> `Living room`. */

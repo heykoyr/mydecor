@@ -1,5 +1,5 @@
 import type { Product, ProductCategory, Retailer, RoomType } from '@/types/domain';
-import { CATEGORY_KEYWORDS, SourceError, type ProductSource } from './source';
+import { CATEGORY_KEYWORDS, type ProductSource } from './source';
 import { EtsySource } from './etsy';
 import { FeedSource, readFeedConfigs } from './feed';
 
@@ -47,10 +47,21 @@ export interface CatalogQuery {
   signal?: AbortSignal;
 }
 
+export interface SourceFailure {
+  source: string;
+  /**
+   * Why it failed, in the adapter's own words.
+   *
+   * Carries upstream status codes and messages but never credentials — a
+   * retailer integration that fails silently is one nobody can fix.
+   */
+  message: string;
+}
+
 export interface CatalogResult {
   products: Product[];
   /** Sources that failed, so the UI can be honest about partial results. */
-  failed: string[];
+  failed: SourceFailure[];
 }
 
 async function withTimeout<T>(work: (signal: AbortSignal) => Promise<T>): Promise<T> {
@@ -85,10 +96,15 @@ export async function searchCatalog({
             signal,
           }),
         );
-        return { products, failedId: null as string | null };
+        return { products, failure: null as SourceFailure | null };
       } catch (cause) {
-        const id = cause instanceof SourceError ? cause.sourceId : source.id;
-        return { products: [] as Product[], failedId: id };
+        return {
+          products: [] as Product[],
+          failure: {
+            source: source.id,
+            message: cause instanceof Error ? cause.message : 'Unknown failure.',
+          },
+        };
       }
     }),
   );
@@ -105,6 +121,12 @@ export async function searchCatalog({
     }
   }
 
-  const failed = [...new Set(settled.map((o) => o.failedId).filter((id): id is string => !!id))];
+  const failed: SourceFailure[] = [];
+  for (const outcome of settled) {
+    if (outcome.failure && !failed.some((f) => f.source === outcome.failure!.source)) {
+      failed.push(outcome.failure);
+    }
+  }
+
   return { products, failed };
 }
