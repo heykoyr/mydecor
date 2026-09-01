@@ -98,6 +98,26 @@ prefixed `NEXT_PUBLIC_`.
 | `CATALOG_PROVIDER` | `static` | `http` swaps the bundled catalogue for a live product feed |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` | Canonical origin for metadata and share links |
 
+## Deployment
+
+Live at **https://mydecor-koyrstudio.vercel.app** (Vercel, project
+`koyrstudio/mydecor`), connected to this GitHub repository — pushes to `main`
+deploy to production automatically.
+
+The app needs no environment variables to run, so a fresh deploy works with zero
+configuration; setting `ANTHROPIC_API_KEY` in the project's environment is what
+upgrades room understanding from surfaces-only to full detection.
+
+Two things to know if you deploy it yourself:
+
+- **Deployment Protection is off** for this project, so the URL opens on a phone
+  without a Vercel login. That matters because camera capture needs HTTPS and a
+  real device. No user data is exposed by this: rooms and photos never leave the
+  browser that took them.
+- `next build` and `next dev` cannot run at the same time in this checkout —
+  they write the same `.next` directory, and inside a OneDrive-synced folder
+  that surfaces as `EPERM` rather than a clear error.
+
 ## Current status
 
 This section tracks what is actually implemented. It is updated per phase, not
