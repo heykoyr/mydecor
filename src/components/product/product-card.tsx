@@ -53,7 +53,8 @@ export function ProductCard({
         )}
       </div>
 
-      <h3 className="mt-2.5 line-clamp-2 text-body-sm font-medium leading-snug text-ink">
+      {/* Two lines reserved, so prices align across a rail. */}
+      <h3 className="mt-2.5 line-clamp-2 min-h-[2.6em] text-body-sm font-medium leading-snug text-ink">
         {product.name}
       </h3>
       <p className="mt-1 text-body-sm text-ink">{formatPrice(product.price, product.currency)}</p>

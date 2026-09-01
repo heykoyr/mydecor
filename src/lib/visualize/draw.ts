@@ -18,8 +18,13 @@ const DEFAULT_SLICES = 48;
 /**
  * Draws `image` so that it exactly fills `quad`, whose points are in pixels.
  *
- * Strips are drawn fractionally wider than their slot so neighbouring edges
- * overlap; without that, antialiasing leaves hairline seams between them.
+ * Each strip draws the *whole* image under its own transform and clips to its
+ * slot, rather than drawing a source sub-rectangle. That distinction matters:
+ * drawing a sub-rectangle antialiases the strip's own edges against nothing,
+ * and 48 of those semi-transparent edges read as regular vertical banding
+ * across the placed product. Clipping has no such edge — the image is
+ * continuous across the cut, and adjacent clip regions overlap by just under a
+ * pixel so no hairline shows between them either.
  */
 export function drawImageInQuad(
   ctx: CanvasRenderingContext2D,
@@ -29,7 +34,8 @@ export function drawImageInQuad(
   sourceHeight: number,
   slices = DEFAULT_SLICES,
 ): void {
-  const overlap = 1.02;
+  /** Clip overlap, in pixels. Just over half a pixel on each side. */
+  const pad = 0.75;
 
   for (let i = 0; i < slices; i += 1) {
     const u0 = i / slices;
@@ -37,26 +43,51 @@ export function drawImageInQuad(
 
     const topLeft = sampleQuad(quad, u0, 0);
     const topRight = sampleQuad(quad, u1, 0);
+    const bottomRight = sampleQuad(quad, u1, 1);
     const bottomLeft = sampleQuad(quad, u0, 1);
 
     const sx = u0 * sourceWidth;
     const sw = (u1 - u0) * sourceWidth;
     if (sw <= 0) continue;
 
-    // Basis vectors mapping the strip's source rect onto its destination
-    // parallelogram: (0,0)→topLeft, (sw,0)→topRight, (0,sh)→bottomLeft.
+    // Basis vectors mapping source space onto this strip's destination
+    // parallelogram, and an origin placed so that source x = sx lands on
+    // topLeft. Extrapolating the origin is what lets the full image be drawn.
     const ax = (topRight.x - topLeft.x) / sw;
     const ay = (topRight.y - topLeft.y) / sw;
     const bx = (bottomLeft.x - topLeft.x) / sourceHeight;
     const by = (bottomLeft.y - topLeft.y) / sourceHeight;
+    const ox = topLeft.x - ax * sx;
+    const oy = topLeft.y - ay * sx;
+
+    const top = unit(topLeft, topRight);
+    const bottom = unit(bottomLeft, bottomRight);
 
     ctx.save();
-    ctx.setTransform(ax, ay, bx, by, topLeft.x, topLeft.y);
-    ctx.drawImage(image, sx, 0, sw, sourceHeight, 0, 0, sw * overlap, sourceHeight);
+    // The path is built while the transform is still the identity, so the clip
+    // is in canvas pixels; setTransform afterwards moves the drawing, not it.
+    ctx.beginPath();
+    ctx.moveTo(topLeft.x - top.x * pad, topLeft.y - top.y * pad);
+    ctx.lineTo(topRight.x + top.x * pad, topRight.y + top.y * pad);
+    ctx.lineTo(bottomRight.x + bottom.x * pad, bottomRight.y + bottom.y * pad);
+    ctx.lineTo(bottomLeft.x - bottom.x * pad, bottomLeft.y - bottom.y * pad);
+    ctx.closePath();
+    ctx.clip();
+
+    ctx.setTransform(ax, ay, bx, by, ox, oy);
+    ctx.drawImage(image, 0, 0, sourceWidth, sourceHeight);
     ctx.restore();
   }
 
   ctx.setTransform(1, 0, 0, 1, 0, 0);
+}
+
+/** Unit vector from `from` to `to`, or zero when they coincide. */
+function unit(from: { x: number; y: number }, to: { x: number; y: number }) {
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  const length = Math.hypot(dx, dy);
+  return length < 1e-6 ? { x: 0, y: 0 } : { x: dx / length, y: dy / length };
 }
 
 /**

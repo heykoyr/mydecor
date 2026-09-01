@@ -135,7 +135,9 @@ export function DiscoverFeed() {
                       className="absolute inset-[13%] h-[74%] w-[74%] object-contain transition-transform duration-slow ease-out group-hover:scale-[1.04]"
                     />
                   </div>
-                  <h3 className="mt-2.5 line-clamp-2 text-body-sm font-medium leading-snug text-ink">
+                  {/* Two lines reserved, so prices align across a row whether
+                      or not a name wraps. */}
+                  <h3 className="mt-2.5 line-clamp-2 min-h-[2.6em] text-body-sm font-medium leading-snug text-ink">
                     {product.name}
                   </h3>
                   <p className="mt-1 text-body-sm text-muted">

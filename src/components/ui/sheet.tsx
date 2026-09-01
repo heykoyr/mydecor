@@ -93,8 +93,15 @@ export function Sheet({
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-sheet">
+          {/*
+            The scrim is heavy on phones, where the sheet covers most of the
+            screen and the content behind it is out of play. On wide screens the
+            sheet is a docked side panel and the room stays the point — dimming
+            it to judge a product against would defeat the exercise — so the
+            scrim there is barely there, present only as a dismiss target.
+          */}
           <motion.div
-            className="absolute inset-0 bg-black/35"
+            className={cn('absolute inset-0', isWide ? 'bg-black/[0.06]' : 'bg-black/35')}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

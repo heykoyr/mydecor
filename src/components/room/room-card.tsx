@@ -12,6 +12,7 @@ import { ImageFrame, Skeleton } from '@/components/ui/surfaces';
  */
 export function RoomCard({ room, className }: { room: Room; className?: string }) {
   const opportunities = room.analysis?.opportunities.length ?? 0;
+  const roomType = room.analysis ? humanise(room.analysis.roomType) : null;
 
   return (
     <Link
@@ -44,7 +45,9 @@ export function RoomCard({ room, className }: { room: Room; className?: string }
         {opportunities > 0
           ? `${opportunities} ${opportunities === 1 ? 'idea' : 'ideas'}`
           : 'Not analysed yet'}
-        {room.analysis ? ` · ${humanise(room.analysis.roomType)}` : ''}
+        {/* The room is usually named after its type, so only say the type when
+            the user has renamed it to something else. */}
+        {roomType && roomType !== room.name ? ` · ${roomType}` : ''}
       </p>
     </Link>
   );
