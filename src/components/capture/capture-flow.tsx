@@ -1,6 +1,5 @@
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState } from 'react';
 import type { AnalysisQualityIssue, CapturedImage, Room } from '@/types/domain';
@@ -12,7 +11,7 @@ import { extractSignals } from '@/lib/vision/signals';
 import { assessQuality, describeIssue, isWorthWarningAbout } from '@/lib/vision/quality';
 import { Button, IconButton } from '@/components/ui/button';
 import { ArrowLeftIcon, CameraIcon, ImageIcon } from '@/components/ui/icons';
-import { ErrorState } from '@/components/ui/states';
+import { ErrorState, ProgressNarrative } from '@/components/ui/states';
 import { CameraView } from './camera-view';
 
 /**
@@ -42,12 +41,14 @@ interface PreparedCapture {
 export function CaptureFlow() {
   const router = useRouter();
   const [stage, setStage] = useState<Stage>({ name: 'choose' });
-  const [working, setWorking] = useState(false);
+  // Which control is busy, so the spinner appears on the button actually used
+  // rather than always on the camera button.
+  const [working, setWorking] = useState<CapturedImage['source'] | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const accept = useCallback(
     async (source: Blob, origin: CapturedImage['source']) => {
-      setWorking(true);
+      setWorking(origin);
       try {
         const { image, thumbnail, element } = await prepareCapture(source, origin);
 
@@ -69,7 +70,7 @@ export function CaptureFlow() {
             : 'Something went wrong opening that photo. Try another one.';
         setStage({ name: 'error', title: "We couldn't use that photo", body: message });
       } finally {
-        setWorking(false);
+        setWorking(null);
       }
     },
     [],
@@ -130,86 +131,61 @@ export function CaptureFlow() {
         }}
       />
 
-      <AnimatePresence mode="wait">
-        {stage.name === 'choose' && (
-          <Fade key="choose">
-            <Chooser
-              working={working}
-              onUseCamera={() => {
-                track('photo_started', { method: 'camera' });
-                setStage({ name: 'camera' });
-              }}
-              onUpload={() => {
-                track('photo_started', { method: 'upload' });
-                fileInputRef.current?.click();
-              }}
-              onDropFile={onFilePicked}
-              onBack={() => router.push('/')}
-            />
-          </Fade>
-        )}
+      {stage.name === 'choose' && (
+        <Chooser
+          working={working}
+          onUseCamera={() => {
+            track('photo_started', { method: 'camera' });
+            setStage({ name: 'camera' });
+          }}
+          onUpload={() => {
+            track('photo_started', { method: 'upload' });
+            fileInputRef.current?.click();
+          }}
+          onDropFile={onFilePicked}
+          onBack={() => router.push('/')}
+        />
+      )}
 
-        {stage.name === 'camera' && (
-          <Fade key="camera">
-            <CameraView
-              onCapture={(frame) => void accept(frame, 'camera')}
-              onCancel={() => setStage({ name: 'choose' })}
-              onUploadInstead={() => {
-                setStage({ name: 'choose' });
-                fileInputRef.current?.click();
-              }}
-            />
-          </Fade>
-        )}
+      {stage.name === 'camera' && (
+        <CameraView
+          onCapture={(frame) => void accept(frame, 'camera')}
+          onCancel={() => setStage({ name: 'choose' })}
+          onUploadInstead={() => {
+            setStage({ name: 'choose' });
+            fileInputRef.current?.click();
+          }}
+        />
+      )}
 
-        {stage.name === 'preview' && (
-          <Fade key="preview">
-            <Preview
-              capture={stage.capture}
-              onRetake={() => {
-                track('photo_retaken', {});
-                setStage({ name: 'choose' });
-              }}
-              onConfirm={() => void confirm(stage.capture)}
-            />
-          </Fade>
-        )}
+      {stage.name === 'preview' && (
+        <Preview
+          capture={stage.capture}
+          onRetake={() => {
+            track('photo_retaken', {});
+            setStage({ name: 'choose' });
+          }}
+          onConfirm={() => void confirm(stage.capture)}
+        />
+      )}
 
-        {stage.name === 'saving' && (
-          <Fade key="saving">
-            <div className="grid min-h-[100dvh] place-items-center px-6">
-              <p className="text-body text-muted">Preparing your room…</p>
-            </div>
-          </Fade>
-        )}
+      {stage.name === 'saving' && (
+        <div className="grid min-h-[100dvh] place-items-center px-6">
+          <ProgressNarrative message="Preparing your room…" />
+        </div>
+      )}
 
-        {stage.name === 'error' && (
-          <Fade key="error">
-            <div className="grid min-h-[100dvh] place-items-center px-4">
-              <ErrorState
-                title={stage.title}
-                body={stage.body}
-                onRetry={() => setStage({ name: 'choose' })}
-                retryLabel="Try another photo"
-              />
-            </div>
-          </Fade>
-        )}
-      </AnimatePresence>
+      {stage.name === 'error' && (
+        <div className="grid min-h-[100dvh] place-items-center px-4">
+          <ErrorState
+            title={stage.title}
+            body={stage.body}
+            onRetry={() => setStage({ name: 'choose' })}
+            retryLabel="Try another photo"
+          />
+        </div>
+      )}
     </div>
-  );
-}
-
-function Fade({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      transition={{ duration: 0.18 }}
-    >
-      {children}
-    </motion.div>
   );
 }
 
@@ -220,7 +196,7 @@ function Chooser({
   onDropFile,
   onBack,
 }: {
-  working: boolean;
+  working: CapturedImage['source'] | null;
   onUseCamera: () => void;
   onUpload: () => void;
   onDropFile: (file: File | undefined) => void;
@@ -260,14 +236,22 @@ function Chooser({
           }`}
         >
           <div className="flex flex-col gap-3">
-            <Button size="lg" fullWidth loading={working} onClick={onUseCamera} icon={<CameraIcon size={20} />}>
+            <Button
+              size="lg"
+              fullWidth
+              loading={working === 'camera'}
+              disabled={working !== null}
+              onClick={onUseCamera}
+              icon={<CameraIcon size={20} />}
+            >
               Take a photo
             </Button>
             <Button
               size="lg"
               fullWidth
               variant="secondary"
-              disabled={working}
+              loading={working === 'upload'}
+              disabled={working !== null}
               onClick={onUpload}
               icon={<ImageIcon size={20} />}
             >

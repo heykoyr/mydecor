@@ -12,7 +12,7 @@ import {
   useMounted,
   usePrefersReducedMotion,
 } from '@/lib/hooks';
-import { CloseIcon } from './icons';
+import { ArrowLeftIcon, CloseIcon } from './icons';
 import { IconButton } from './button';
 
 /**
@@ -45,6 +45,11 @@ export interface SheetProps {
   footer?: ReactNode;
   /** Fills the panel edge-to-edge — used when the content leads with an image. */
   bleed?: boolean;
+  /**
+   * Renders a back control in the header. Present when the sheet has navigated
+   * within itself, which is preferable to stacking a second modal surface.
+   */
+  onBack?: () => void;
   className?: string;
 }
 
@@ -57,6 +62,7 @@ export function Sheet({
   children,
   footer,
   bleed = false,
+  onBack,
   className,
 }: SheetProps) {
   const mounted = useMounted();
@@ -134,6 +140,7 @@ export function Sheet({
               showTitle={showTitle}
               description={description}
               onClose={onClose}
+              onBack={onBack}
               isWide={isWide}
               onDragStart={(event) => {
                 if (!reduceMotion) dragControls.start(event);
@@ -172,6 +179,7 @@ function SheetHeader({
   showTitle,
   description,
   onClose,
+  onBack,
   isWide,
   onDragStart,
 }: {
@@ -181,6 +189,7 @@ function SheetHeader({
   showTitle: boolean;
   description?: string;
   onClose: () => void;
+  onBack?: () => void;
   isWide: boolean;
   onDragStart: (event: React.PointerEvent) => void;
 }) {
@@ -197,7 +206,20 @@ function SheetHeader({
         <div className="mx-auto mb-3 h-1 w-9 rounded-full bg-line-strong" aria-hidden="true" />
       )}
 
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-2">
+        {onBack && (
+          <IconButton
+            label="Back"
+            size="sm"
+            variant="ghost"
+            onClick={onBack}
+            onPointerDown={(event) => event.stopPropagation()}
+            className="-ml-2 shrink-0 text-muted"
+          >
+            <ArrowLeftIcon size={20} />
+          </IconButton>
+        )}
+
         <div className="min-w-0 flex-1">
           <h2
             id={titleId}

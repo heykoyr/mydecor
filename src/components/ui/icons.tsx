@@ -120,6 +120,14 @@ export const ExternalIcon = (props: IconProps) => (
   </Icon>
 );
 
+export const TrashIcon = (props: IconProps) => (
+  <Icon {...props}>
+    <path d="M4.5 6.5h15M9.5 6.5V5a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v1.5" />
+    <path d="M6.5 6.5 7.3 19a1 1 0 0 0 1 .95h7.4a1 1 0 0 0 1-.95l.8-12.5" />
+    <path d="M10.5 10v6M13.5 10v6" />
+  </Icon>
+);
+
 export const AlertIcon = (props: IconProps) => (
   <Icon {...props}>
     <circle cx="12" cy="12" r="8.5" />

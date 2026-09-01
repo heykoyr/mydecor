@@ -59,31 +59,38 @@ export function validateFile(file: File): PrepareFailure | null {
   return null;
 }
 
+/**
+ * Waits for an image to be usable.
+ *
+ * Deliberately `load` rather than `decode()`. A pending `decode()` promise can
+ * stall indefinitely while the document is hidden — background the tab mid-scan
+ * and the capture would hang with no error to recover from. `load` fires
+ * regardless, and is all `drawImage` actually requires.
+ */
+function whenLoaded(image: HTMLImageElement, src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    image.onload = () => resolve(image);
+    image.onerror = () =>
+      reject(
+        new ImagePrepareError({
+          code: 'decode_failed',
+          message: "We couldn't open that photo. It may be damaged or in a format we can't read.",
+        }),
+      );
+    image.src = src;
+  });
+}
+
 /** Decodes a blob, honouring EXIF orientation where the browser supports it. */
 export async function decodeImage(source: Blob): Promise<HTMLImageElement> {
   const url = URL.createObjectURL(source);
   try {
     const image = new Image();
     image.decoding = 'async';
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve();
-      image.onerror = () =>
-        reject(
-          new ImagePrepareError({
-            code: 'decode_failed',
-            message: "We couldn't open that photo. It may be damaged or in a format we can't read.",
-          }),
-        );
-      image.src = url;
-    });
-    // Force the decode before the object URL is revoked.
-    if (typeof image.decode === 'function') {
-      await image.decode().catch(() => undefined);
-    }
-    return image;
+    return await whenLoaded(image, url);
   } finally {
-    // Safari needs the URL alive until after decode; revoking on the next tick
-    // is late enough and still avoids leaking one URL per capture.
+    // Revoking on the next tick keeps the URL alive long enough for the image
+    // to be drawn, without leaking one object URL per capture.
     setTimeout(() => URL.revokeObjectURL(url), 0);
   }
 }
@@ -139,9 +146,7 @@ export async function prepareCapture(
 
   // Re-decode the normalised image so downstream analysis measures exactly what
   // the user will see, not the original the canvas was drawn from.
-  const element = new Image();
-  element.src = src;
-  await element.decode().catch(() => undefined);
+  const element = await whenLoaded(new Image(), src);
 
   return {
     image: {

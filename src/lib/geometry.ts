@@ -143,7 +143,38 @@ export function fitInQuad(
   const u = clamp(coverage, 0.02, 1);
   // Convert the object's own aspect ratio into the quad's (u, v) space.
   const v = clamp((u / aspectRatio) * surfaceAspect, 0.02, 1);
+  return positionInQuad(quad, u, v, anchorU, anchorV);
+}
 
+/**
+ * As `fitInQuad`, but `coverage` is the fraction of the quad's **height** the
+ * object should occupy.
+ *
+ * This is the right axis for anything that stands on a floor or rests on a
+ * surface. What makes a floor lamp read as a floor lamp is its height against
+ * the wall behind it; sizing it by a fraction of the region's width produces a
+ * correctly-proportioned object at entirely the wrong scale.
+ */
+export function fitInQuadByHeight(
+  quad: Quad,
+  aspectRatio: number,
+  coverage: number,
+  anchorU = 0.5,
+  anchorV = 1,
+): Quad {
+  const surfaceAspect = quadWidth(quad) / Math.max(quadHeight(quad), 1e-6);
+  const v = clamp(coverage, 0.02, 1);
+  const u = clamp((v * aspectRatio) / surfaceAspect, 0.02, 1);
+  return positionInQuad(quad, u, v, anchorU, anchorV);
+}
+
+/**
+ * Places a (u, v)-sized box within a quad.
+ *
+ * `anchorV` names the point on the object that lands on `anchorV` of the quad:
+ * 1 seats its base on the quad's bottom edge, 0.5 centres it.
+ */
+function positionInQuad(quad: Quad, u: number, v: number, anchorU: number, anchorV: number): Quad {
   const u0 = clamp(anchorU - u / 2, 0, 1 - u);
   const v0 = clamp(anchorV - v * anchorV, 0, 1 - v);
   return subQuad(quad, u0, v0, u0 + u, v0 + v);

@@ -6,7 +6,7 @@ import type { ReactNode } from 'react';
 import { brand } from '@/config/brand';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { BookmarkIcon, CameraIcon, HomeIcon } from '@/components/ui/icons';
+import { BookmarkIcon, CameraIcon, CompassIcon, HomeIcon } from '@/components/ui/icons';
 
 /**
  * The application chrome.
@@ -20,12 +20,9 @@ import { BookmarkIcon, CameraIcon, HomeIcon } from '@/components/ui/icons';
  * framing it would undercut that.
  */
 
-/**
- * Discover is intentionally absent until it has real content behind it. A tab
- * leading to a placeholder costs more trust than a missing tab costs reach.
- */
 const TABS = [
   { href: '/', label: 'Home', Icon: HomeIcon },
+  { href: '/discover', label: 'Discover', Icon: CompassIcon },
   { href: '/saved', label: 'Saved', Icon: BookmarkIcon },
 ] as const;
 

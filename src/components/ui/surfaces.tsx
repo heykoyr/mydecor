@@ -12,11 +12,17 @@ export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
 }
 
 /**
- * A selectable filter token. Chips are for switching between sets of content —
- * never as a substitute for a button that performs an action.
+ * A compact token: either a filter that can be on or off, or a shortcut that
+ * performs an action.
+ *
+ * `selected` is expressed with `aria-pressed`, not a `tab` role. A tab role is
+ * only valid inside a tablist that owns tabpanels, and these do not — the
+ * filter narrows a list in place, and the room screen's chips are shortcuts to
+ * a hotspot. Claiming the wrong role tells a screen reader user to expect
+ * navigation that will not happen.
  */
 export function Chip({
-  selected = false,
+  selected,
   className,
   children,
   ...props
@@ -24,8 +30,7 @@ export function Chip({
   return (
     <button
       type="button"
-      role="tab"
-      aria-selected={selected}
+      aria-pressed={selected}
       className={cn(
         'inline-flex h-9 shrink-0 items-center rounded-full px-4 text-body-sm font-medium',
         'transition-colors duration-fast ease-out',
@@ -116,6 +121,54 @@ export function ImageFrame({
       style={{ aspectRatio: ratio }}
     >
       {children}
+    </div>
+  );
+}
+
+/**
+ * A two-or-more-way switch between views of the same thing.
+ *
+ * Distinct from `Chip`, which filters a set. This changes what one surface is
+ * showing — original against preview — and so is styled as a single control
+ * with a moving selection rather than as separate tokens.
+ */
+export function Segmented<T extends string>({
+  options,
+  value,
+  onChange,
+  label,
+  className,
+}: {
+  options: readonly { value: T; label: string }[];
+  value: T;
+  onChange: (value: T) => void;
+  label: string;
+  className?: string;
+}) {
+  return (
+    <div
+      role="radiogroup"
+      aria-label={label}
+      className={cn('inline-flex rounded-full bg-sunken p-1', className)}
+    >
+      {options.map((option) => {
+        const selected = option.value === value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            role="radio"
+            aria-checked={selected}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              'h-9 rounded-full px-4 text-body-sm font-medium transition-colors duration-fast',
+              selected ? 'bg-elevated text-ink shadow-e1' : 'text-muted hover:text-ink',
+            )}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

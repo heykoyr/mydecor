@@ -123,19 +123,22 @@
 }
 
 @layer components {
-  /* Hides scrollbars on horizontal rails without disabling scrolling. */
+  /*
+   * Horizontal rails: hidden scrollbar, momentum scrolling, no snapping.
+   *
+   * Snap points are deliberately absent. Rails are laid out full-bleed with
+   * negative margins so the row can scroll past the content gutter, and
+   * scroll-snap aligns items to the scrollport edge rather than the padding
+   * edge — which silently offsets the first card into the gutter. Free
+   * scrolling is also the better feel for a six-item product row.
+   */
   .rail {
     scrollbar-width: none;
     -ms-overflow-style: none;
-    scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
   }
   .rail::-webkit-scrollbar {
     display: none;
-  }
-
-  .rail-item {
-    scroll-snap-align: start;
   }
 
   /* Photographic surfaces get a hairline inner edge rather than a border,
