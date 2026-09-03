@@ -296,6 +296,17 @@ export interface Product {
   availability: Availability;
   /** Canonical retailer product page. */
   url: string;
+  /**
+   * True when this item comes from the bundled reference catalogue rather than
+   * a retailer, and therefore cannot be bought.
+   *
+   * This belongs to the product rather than to the repository because the two
+   * disagree. A connected retailer that fails a search falls back to the
+   * reference catalogue, and those items are still not purchasable — so asking
+   * the repository answers "which source is connected", not "where did this
+   * item actually come from". Only the second question has a correct answer.
+   */
+  isReference: boolean;
   tags: string[];
   roomCompatibility: RoomType[];
   /** Placement modes this product's artwork supports being rendered in. */

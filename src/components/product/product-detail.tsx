@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import type { Product } from '@/types/domain';
 import { formatDimensions, formatPrice, humanise } from '@/lib/utils';
-import { productRepository } from '@/lib/products/repository';
 import { hydrateRetailers, lookupRetailer, outboundUrl } from '@/lib/products/retailers';
 import { track } from '@/lib/analytics/analytics';
 import { Badge } from '@/components/ui/surfaces';
@@ -35,10 +34,14 @@ export function ProductDetail({
 
   const retailer = lookupRetailer(product.retailerId);
   const dimensions = product.dimensions ? formatDimensions(product.dimensions) : null;
-  // Only a connected retailer gets a buy link. With the reference catalogue
-  // there is nothing to link to, and a button that goes nowhere is worse than
-  // no button.
-  const purchasable = !productRepository.isReference;
+  // Only a real listing gets a buy link. With a reference item there is nothing
+  // to link to, and a button that goes nowhere is worse than no button.
+  //
+  // Compared against `false` rather than negated: a product snapshot saved
+  // before this field existed carries no provenance at all, and an item whose
+  // origin is unknown must not be presented as purchasable. Unknown fails
+  // closed, towards the honest answer.
+  const purchasable = product.isReference === false;
   const retailerName = retailer?.name ?? 'the retailer';
 
   const care = product.metadata ?? {};
@@ -121,11 +124,16 @@ export function ProductDetail({
       {!purchasable && (
         <div className="mt-5 rounded-md bg-sunken px-4 py-3">
           <Badge tone="caution">Sample catalogue</Badge>
+          {/*
+            Describes the item, not the deployment. A retailer can be connected
+            and still fail its search, in which case this reference item is
+            being served as a fallback — and saying "no retailer is connected"
+            would then be false in exactly the situation the notice matters most.
+          */}
           <p className="mt-2 text-body-sm text-muted">
-            No retailer is connected to this deployment, so this item comes from the bundled
-            reference catalogue: it is not purchasable and the seller is not a real one. Everything
-            else here — the recommendation, the in-room preview — behaves exactly as it will once a
-            real catalogue is connected.
+            This item comes from the bundled reference catalogue: it is not purchasable and the
+            seller is not a real one. Everything else here — the recommendation, the in-room
+            preview — behaves exactly as it will with a real listing.
           </p>
         </div>
       )}

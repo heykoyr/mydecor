@@ -120,6 +120,9 @@ function build(draft: ProductDraft): Product {
     availability: draft.availability ?? 'in_stock',
     // Deliberately not a live destination; see CATALOG_IS_REFERENCE.
     url: `https://example.com/${draft.retailerId}/${draft.id}`,
+    // Carried on the item so it survives being served as a fallback by a
+    // repository that believes it is live.
+    isReference: CATALOG_IS_REFERENCE,
     tags: draft.tags,
     roomCompatibility: draft.rooms,
     supportedPlacements: defaults.placements,

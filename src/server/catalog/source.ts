@@ -225,6 +225,9 @@ export function normalise(input: NormaliseInput): Product {
     styles: inferStyles(`${input.title} ${(input.tags ?? []).join(' ')}`),
     availability: input.availability ?? 'in_stock',
     url: input.productUrl,
+    // A listing that came back from a retailer is real by construction: this
+    // function is only ever reached with one in hand.
+    isReference: false,
     tags: (input.tags ?? []).slice(0, 8),
     roomCompatibility: CATEGORY_ROOMS[input.category],
     supportedPlacements: placement.placements,
