@@ -75,16 +75,23 @@ What that means in practice: the decisions below are mine, and so is the code th
 ## How it works
 
 ```mermaid
-flowchart LR
-  P["Photo<br/>normalised to 1600px"] --> S["Signals — on-device<br/>palette · focus · floor line"]
-  S --> V{"VisionProvider"}
-  V -->|"key configured"| A["Anthropic<br/>via /api/analyze"]
-  V -->|"no key, or unreachable"| H["Heuristic<br/>geometry only"]
-  A --> O["Opportunity engine<br/>deterministic rules"]
+flowchart TD
+  P["Photo — normalised to 1600px, EXIF orientation baked in"]
+  S["Signals, on-device — palette · focus · floor line · blank wall"]
+  V{"VisionProvider"}
+  A["Anthropic via /api/analyze — re-validated against the domain unions"]
+  H["Heuristic — geometry only, labelled 'surfaces only' in the UI"]
+  O["Opportunity engine — deterministic rules<br/>suppress if already decorated · de-duplicate · cap at six"]
+  R["Recommendation engine — 8 weighted factors, diversified by category"]
+  C["Canvas compositor — perspective · scale · light · contact shadow"]
+  Out["Preview, in the room — captioned indicative, never measured"]
+
+  P --> S --> V
+  V -->|"key configured"| A
+  V -->|"no key, or unreachable"| H
+  A --> O
   H --> O
-  O --> R["Recommendation engine<br/>8 weighted factors"]
-  R --> C["Canvas compositor<br/>perspective · scale · light · shadow"]
-  C --> Out["Preview, in the room"]
+  O --> R --> C --> Out
 ```
 
 **Signals** ([`vision/signals.ts`](src/lib/vision/signals.ts)) run in the browser before any model: a coarse palette histogram, Laplacian-variance focus, the strongest horizontal discontinuity in the lower frame (the floor line), connected bright regions (windows), and per-column edge density above the horizon (blank wall). Photo-quality problems are caught here, while the user is still standing in the room.
