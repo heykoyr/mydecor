@@ -4,6 +4,8 @@
 
 **[Open the live app →](https://mydecor-koyrstudio.vercel.app)** · Next.js 15 · TypeScript · No UI library
 
+> **Prototype status:** MyDecor previews indicative placements, not measured fit. Without a configured retailer integration, it uses a bundled reference catalogue rather than implying those items are available to buy.
+
 ![A photographed room with five decoration opportunities marked on it](docs/images/room-hotspots.jpg)
 
 ---
